@@ -24,6 +24,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+protected:
+	// 소유 캐릭터
+	UPROPERTY()
+	ACharacter* OwnerCharacter;
 
 protected:
 
@@ -31,9 +35,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* WeaponMesh;
 
-	// 소유 캐릭터
-	UPROPERTY()
-	ACharacter* OwnerCharacter;
+
 
 	// 캐릭터 손 소켓 이름
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")

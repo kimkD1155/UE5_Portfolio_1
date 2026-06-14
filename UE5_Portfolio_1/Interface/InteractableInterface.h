@@ -26,7 +26,7 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
     void Interact(ACharacter* Interactor);
 
-    // HUD 힌트 텍스트 (ex. "E | 줍기", "E | 문 열기")
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
-    FText GetInteractHintText();
+	// 상호작용 힌트 텍스트 반환
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	FText GetInteractHintText();
 };

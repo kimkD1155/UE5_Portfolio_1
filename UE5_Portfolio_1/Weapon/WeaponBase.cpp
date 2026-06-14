@@ -3,8 +3,9 @@
 
 #include "WeaponBase.h"
 #include "Components/StaticMeshComponent.h"
+#include "../Component/InteractionComponent.h"
+#include "../Character/KangPlayerCharacter.h"
 #include "GameFramework/Character.h"
-#include "../Characters/KangPlayerCharacter.h"
 
 // Sets default values
 AWeaponBase::AWeaponBase()
@@ -75,12 +76,14 @@ void AWeaponBase::Interact_Implementation(ACharacter* Interactor)
 {
     if (AKangPlayerCharacter* Character = Cast<AKangPlayerCharacter>(Interactor))
     {
-        Character->PickupWeapon(this);
+        UInteractionComponent* InteractionComp = Character->FindComponentByClass<UInteractionComponent>();
+        if (InteractionComp)
+            InteractionComp->PickupWeapon(this);
     }
 }
 
 FText AWeaponBase::GetInteractHintText_Implementation()
 {
     //return FText::FromString(TEXT("E 줍기")); 이거 왜 안 됨
-    return FText::GetEmpty();
+	return FText::FromString(TEXT("E - Pick Up"));
 }

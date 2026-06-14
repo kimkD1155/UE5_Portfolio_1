@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "../Weapon/WeaponBase.h"
 #include "KangPlayerCharacter.generated.h"
 
+class UHUDComponent;
+class UInteractionComponent;
 
 class UInputAction;
 struct FInputActionValue;
@@ -32,8 +33,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 
+
+//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+// 키 입력 관련
 protected:
-	// 키 입력 액션
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -58,28 +62,16 @@ protected:
 	void StopFire(const FInputActionValue& Value);
 	void StartAim(const FInputActionValue& Value);
 	void StopAim(const FInputActionValue& Value);
+//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 
+
+
+//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+// 컴포넌트
 protected:
-	// 라인트레이스 감지 거리
-	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
-	float InteractTraceDistance = 600.f;
-
-
-public:
-	// 무기 픽업, 드랍
-	void PickupWeapon(AWeaponBase* Weapon);
-	void DropWeapon();
-
-	UFUNCTION(BlueprintPure)
-	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
-
-private:
-	void UpdateInteractionTarget();   // Tick에서 호출
-
-	UPROPERTY()
-	AActor* CurrentInteractTarget = nullptr;   // 현재 조준 중인 대상
-
-	UPROPERTY()
-	AWeaponBase* EquippedWeapon = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHUDComponent* HUDComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UInteractionComponent* InteractionComponent;
 };
 

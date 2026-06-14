@@ -5,36 +5,31 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
+#include "../Weapon/WeaponBase.h"
+#include "../Component/HUDComponent.h"
+#include "../Component/InteractionComponent.h"
+
 // Sets default values
 AKangPlayerCharacter::AKangPlayerCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	HUDComponent = CreateDefaultSubobject<UHUDComponent>(TEXT("HUDComponent"));
+	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 }
 
 // Called when the game starts or when spawned
 void AKangPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called every frame
 void AKangPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	/*if (!EquippedWeapon)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Equipped weapon: %s"), *EquippedWeapon->GetName());
-	}*/
-
-	UpdateInteractionTarget();
 }
 
 // Called to bind functionality to input
@@ -92,134 +87,56 @@ void AKangPlayerCharacter::Interact(const FInputActionValue& Value)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interact action triggered!"));
 
-	if (!CurrentInteractTarget)
+	if (!InteractionComponent->GetCurrentInteractTarget())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No interactable target in sight."));
 		return;
 	}
 
-	if (CurrentInteractTarget->Implements<UInteractableInterface>())
+
+	if (InteractionComponent->GetCurrentInteractTarget()->Implements<UInteractableInterface>())
 	{
-		IInteractableInterface::Execute_Interact(CurrentInteractTarget, this);
+		IInteractableInterface::Execute_Interact(InteractionComponent->GetCurrentInteractTarget(), this);
 	}
 }
 
 void AKangPlayerCharacter::Drop(const FInputActionValue& Value)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Drop action triggered!"));
-	DropWeapon();
+	InteractionComponent->DropWeapon();
 }
 
 void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 {
-	if (!EquippedWeapon)
+	if (!InteractionComponent->GetEquippedWeapon())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
 		return;
 	}
-	GetEquippedWeapon()->StartFire();
+	InteractionComponent->GetEquippedWeapon()->StartFire();
 }
 
 void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)
 {
-	if (!EquippedWeapon) return;
-	GetEquippedWeapon()->StopFire();
+	if (!InteractionComponent->GetEquippedWeapon()) return;
+	InteractionComponent->GetEquippedWeapon()->StopFire();
 }
 
 void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
 {
-	if (!EquippedWeapon)
+	if (!InteractionComponent->GetEquippedWeapon())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
 		return;
 	}
-	GetEquippedWeapon()->StartAim();
+	InteractionComponent->GetEquippedWeapon()->StartAim();
 }
 
 void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 {
-	if (!EquippedWeapon) return;
-	GetEquippedWeapon()->StopAim();
+	if (!InteractionComponent->GetEquippedWeapon()) return;
+	InteractionComponent->GetEquippedWeapon()->StopAim();
 }
 
 
 //-----------------여기까지 키 바인딩 및 입력 처리-----------------
-
-void AKangPlayerCharacter::UpdateInteractionTarget()
-{
-	// 카메라 위치 / 방향 가져오기
-	FVector CameraLocation;
-	FRotator CameraRotation;
-	GetController()->GetPlayerViewPoint(CameraLocation, CameraRotation);
-
-	FVector TraceStart = CameraLocation;
-	FVector TraceEnd = CameraLocation + CameraRotation.Vector() * InteractTraceDistance;
-
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult, TraceStart, TraceEnd, ECC_Visibility, Params
-	);
-
-	// 맞은 게 있으면 초록색, 없으면 빨간색
-	DrawDebugLine(
-		GetWorld(),
-		TraceStart,
-		bHit ? HitResult.ImpactPoint : TraceEnd,
-		bHit ? FColor::Green : FColor::Red,
-		false,    // 지속 표시 여부 (false = 매 프레임 갱신)
-		-1.f,     // 지속 시간 (-1 = 1프레임만)
-		0,
-		1.5f      // 선 두께
-	);
-
-	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
-
-	// IInteractable 구현한 액터만 대상으로
-	if (HitActor && HitActor->Implements<UInteractableInterface>())
-	{
-		if (CurrentInteractTarget != HitActor)
-		{
-			CurrentInteractTarget = HitActor;
-			// TODO: Step 4에서 HUD 힌트 텍스트 업데이트
-		}
-	}
-	else
-	{
-		if (CurrentInteractTarget != nullptr)
-		{
-			CurrentInteractTarget = nullptr;
-			// TODO: Step 4에서 HUD 힌트 숨기기
-		}
-	}
-}
-
-
-void AKangPlayerCharacter::PickupWeapon(AWeaponBase* Weapon)
-{
-	if (!Weapon) return;
-
-	if (EquippedWeapon)
-		DropWeapon();
-
-	EquippedWeapon = Weapon;
-	EquippedWeapon->Equip(this);
-	CurrentInteractTarget = nullptr;
-}
-
-
-
-void AKangPlayerCharacter::DropWeapon()
-{
-	if (!EquippedWeapon) return;
-
-	EquippedWeapon->Unequip();
-
-	FVector DropLocation = GetActorLocation()
-		+ GetActorForwardVector() * 100.f
-		+ FVector(0.f, 0.f, -50.f);
-	EquippedWeapon->SetActorLocation(DropLocation);
-	EquippedWeapon = nullptr;
-}
