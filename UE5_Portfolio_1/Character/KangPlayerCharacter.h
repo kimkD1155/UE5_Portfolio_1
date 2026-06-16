@@ -44,6 +44,8 @@ protected:
 	UInputAction* LookAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* JumpAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "input")
+	UInputAction* RunAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* InteractAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -56,6 +58,8 @@ protected:
 protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void StartRunning(const FInputActionValue& Value);
+	void StopRunning(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
 	void Drop(const FInputActionValue& Value);
 	void StartFire(const FInputActionValue& Value);
@@ -63,7 +67,8 @@ protected:
 	void StartAim(const FInputActionValue& Value);
 	void StopAim(const FInputActionValue& Value);
 //�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-
+	float WalkSpeed = 300.f;
+	float RunSpeed = 600.f;
 
 
 //�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�

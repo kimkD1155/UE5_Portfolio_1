@@ -8,6 +8,7 @@
 #include "../Weapon/WeaponBase.h"
 #include "../Component/HUDComponent.h"
 #include "../Component/InteractionComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AKangPlayerCharacter::AKangPlayerCharacter()
@@ -43,6 +44,8 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKangPlayerCharacter::Look);
 		EIC->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EIC->BindAction(RunAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::StartRunning);
+		EIC->BindAction(RunAction, ETriggerEvent::Completed, this, &AKangPlayerCharacter::StopRunning);
 		EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Interact);
 		EIC->BindAction(DropAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Drop);
 		EIC->BindAction(FireAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::StartFire);
@@ -81,6 +84,16 @@ void AKangPlayerCharacter::Look(const FInputActionValue& Value)
 		AddControllerPitchInput(-LookAxisVector.Y);
 	}
 
+}
+
+void AKangPlayerCharacter::StartRunning(const FInputActionValue& Value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+}
+
+void AKangPlayerCharacter::StopRunning(const FInputActionValue& Value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 void AKangPlayerCharacter::Interact(const FInputActionValue& Value)

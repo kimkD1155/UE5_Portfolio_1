@@ -5,7 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "../Component/InteractionComponent.h"
 #include "../Character/KangPlayerCharacter.h"
-#include "GameFramework/Character.h"
+
 
 // Sets default values
 AWeaponBase::AWeaponBase()

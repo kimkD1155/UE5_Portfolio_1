@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "../Interface/InteractableInterface.h"
+#include "GameFramework/Character.h"
+// OwnerCharacter->GetController() 같은 멤버함수를 호출하려면 반드시 완전한 타입 정의가 필요
 #include "WeaponBase.generated.h"
+
 
 UCLASS()
 class UE5_PORTFOLIO_1_API AWeaponBase : public AActor, public IInteractableInterface
