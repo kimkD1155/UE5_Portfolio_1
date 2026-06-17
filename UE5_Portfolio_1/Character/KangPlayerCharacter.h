@@ -8,7 +8,7 @@
 
 class UHUDComponent;
 class UInteractionComponent;
-
+class AWeaponBase;
 class UInputAction;
 struct FInputActionValue;
 
@@ -69,6 +69,10 @@ protected:
 //�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
 	float WalkSpeed = 300.f;
 	float RunSpeed = 600.f;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	EWeaponType GetCurrentWeaponType() const;
+	
 
 
 //�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�

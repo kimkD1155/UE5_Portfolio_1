@@ -7,7 +7,7 @@
 
 ARifle::ARifle()
 {
-
+    WeaponType = EWeaponType::Rifle;
 }
 
 void ARifle::StartFire()

@@ -9,6 +9,15 @@
 // OwnerCharacter->GetController() 같은 멤버함수를 호출하려면 반드시 완전한 타입 정의가 필요
 #include "WeaponBase.generated.h"
 
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	None,
+	Pistol,
+	Rifle,
+	Melee
+};
+
 
 UCLASS()
 class UE5_PORTFOLIO_1_API AWeaponBase : public AActor, public IInteractableInterface
@@ -38,7 +47,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* WeaponMesh;
 
-
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	EWeaponType WeaponType = EWeaponType::None;
 
 	// 캐릭터 손 소켓 이름
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
@@ -53,6 +63,9 @@ public:
 	// IInteractableInterface
 	virtual void Interact_Implementation(ACharacter* Interactor);
 	virtual FText GetInteractHintText_Implementation();
+
+	UFUNCTION(BlueprintPure)
+	EWeaponType GetWeaponType() const { return WeaponType; }
 
 	virtual void StartFire() {}
 	virtual void StopFire() {}
