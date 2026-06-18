@@ -100,6 +100,7 @@ void AKangPlayerCharacter::Look(const FInputActionValue& Value)
 void AKangPlayerCharacter::StartRunning(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	ExitCombatMode();
 }
 
 void AKangPlayerCharacter::StopRunning(const FInputActionValue& Value)
@@ -139,8 +140,7 @@ void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 
 		return;
 	}
-	bUseControllerRotationYaw = true; // 무기 발사 시 캐릭터 회전 활성화
-	GetCharacterMovement()->bOrientRotationToMovement = false; // 무기 발사 시 캐릭터 이동 방향 회전 비활성화
+	EnterCombatMode();
 	InteractionComponent->GetEquippedWeapon()->StartFire();
 }
 
@@ -148,8 +148,7 @@ void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)
 {
 	if (!InteractionComponent->GetEquippedWeapon()) return;
 	
-	bUseControllerRotationYaw = false; // 무기 발사 종료 시 캐릭터 회전 비활성화
-	GetCharacterMovement()->bOrientRotationToMovement = true; // 무기 발사 종료 시 캐릭터 이동 방향 회전 활성화
+	
 	InteractionComponent->GetEquippedWeapon()->StopFire();
 }
 
@@ -161,12 +160,14 @@ void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
 		return;
 	}
+	EnterCombatMode();
 	InteractionComponent->GetEquippedWeapon()->StartAim();
 }
 
 void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 {
 	if (!InteractionComponent->GetEquippedWeapon()) return;
+	
 	InteractionComponent->GetEquippedWeapon()->StopAim();
 }
 
@@ -180,4 +181,27 @@ EWeaponType AKangPlayerCharacter::GetCurrentWeaponType() const
 		return InteractionComponent->GetEquippedWeapon()->GetWeaponType();
 	}
 	return EWeaponType::None;
+}
+
+void AKangPlayerCharacter::EnterCombatMode()
+{
+	bIsInCombatMode = true;
+	bUseControllerRotationYaw = true; // 무기 발사 시 캐릭터 회전 활성화
+	GetCharacterMovement()->bOrientRotationToMovement = false; // 무기 발사 시 캐릭터 이동 방향 회전 비활성화
+
+	// 타이머 리셋 (이미 있으면 새로 갱신)
+	GetWorldTimerManager().SetTimer(
+		CombatModeTimerHandle,
+		this,
+		&AKangPlayerCharacter::ExitCombatMode,
+		CombatModeTimeout,
+		false
+	);
+}
+
+void AKangPlayerCharacter::ExitCombatMode()
+{
+	bIsInCombatMode = false;
+	bUseControllerRotationYaw = false; // 무기 발사 종료 시 캐릭터 회전 비활성화
+	GetCharacterMovement()->bOrientRotationToMovement = true; // 무기 발사 종료 시 캐릭터 이동 방향 회전 활성화
 }
