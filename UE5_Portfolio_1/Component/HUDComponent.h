@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "../Widget/InteractHintWidget.h"
 #include "../Widget/CrosshairWidget.h"
+#include "../Widget/AmmoWidget.h"
 #include "HUDComponent.generated.h"
 
 
@@ -31,6 +32,8 @@ public:
 	void ShowInteractHint(const FText& Text);
 	void HideInteractHint();
 
+	void UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo, const FText& WeaponName);
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
@@ -38,6 +41,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<UInteractHintWidget> InteractHintWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UAmmoWidget> AmmoWidgetClass;
 
 private:
 	UPROPERTY()
@@ -48,4 +54,6 @@ private:
 
 	UPROPERTY()
 	UInteractHintWidget* InteractHintWidget = nullptr;
+	UPROPERTY()
+	UAmmoWidget* AmmoWidget = nullptr;
 };

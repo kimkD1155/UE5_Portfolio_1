@@ -39,6 +39,24 @@ void UHUDComponent::BeginPlay()
 			InteractHintWidget->HideHint();
 		}
 	}
+
+	if (AmmoWidgetClass)
+	{
+		AmmoWidget = CreateWidget<UAmmoWidget>(GetWorld(), AmmoWidgetClass);
+		if (AmmoWidget)
+		{
+			AmmoWidget->AddToViewport();
+			AmmoWidget->ShowAmmoUI();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AmmoWidget creation FAILED"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AmmoWidgetClass is None!"));
+	}
 	
 }
 
@@ -48,7 +66,7 @@ void UHUDComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	
 }
 
 void UHUDComponent::ShowInteractHint(const FText& Text)
@@ -62,4 +80,12 @@ void UHUDComponent::HideInteractHint()
 {
 	if (!InteractHintWidget) return;
 	InteractHintWidget->HideHint();
+}
+
+void UHUDComponent::UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo, const FText& WeaponName)
+{
+	if (!AmmoWidget) return;
+	AmmoWidget->UpdateAmmo(CurrentAmmo, ReserveAmmo);
+	AmmoWidget->UpdateWeaponName(WeaponName);
+	AmmoWidget->ShowAmmoUI();
 }

@@ -54,6 +54,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FName AttachSocketName = TEXT("hand_r_Socket");
 
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FText WeaponName = FText::FromString(TEXT("Unknown"));
+
 public:
 	// 式式 濰雜 / п薯 式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式
 	void Equip(ACharacter* NewOwner);
@@ -66,6 +70,10 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	EWeaponType GetWeaponType() const { return WeaponType; }
+
+	UFUNCTION(BlueprintPure)
+	FText GetWeaponName() const { return WeaponName; }
+
 
 	virtual void StartFire() {}
 	virtual void StopFire() {}

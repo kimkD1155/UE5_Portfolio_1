@@ -6,6 +6,7 @@
 #include "EnhancedInputSubsystems.h"
 
 #include "../Weapon/WeaponBase.h"
+#include "../Weapon/RangedWeapon.h"
 #include "../Component/HUDComponent.h"
 #include "../Component/InteractionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -33,8 +34,17 @@ void AKangPlayerCharacter::BeginPlay()
 void AKangPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// 현재		장착된 무기 타입 출력 (디버그용)
-	UE_LOG(LogTemp, Warning, TEXT("Current Weapon Type: %s"), *UEnum::GetValueAsString(GetCurrentWeaponType()));
+
+	if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(InteractionComponent->GetEquippedWeapon()))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Test"))
+		HUDComponent->UpdateAmmoUI(
+			Ranged->GetCurrentAmmo(),
+			Ranged->GetReserveAmmo(),
+			Ranged->GetWeaponName()
+		);
+	}
+
 }
 
 // Called to bind functionality to input
@@ -56,6 +66,7 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EIC->BindAction(FireAction, ETriggerEvent::Completed, this, &AKangPlayerCharacter::StopFire);
 		EIC->BindAction(AimAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::StartAim);
 		EIC->BindAction(AimAction, ETriggerEvent::Completed, this, &AKangPlayerCharacter::StopAim);
+		EIC->BindAction(ReloadAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Reload);
 	}
 	else
 	{
@@ -169,6 +180,21 @@ void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 	if (!InteractionComponent->GetEquippedWeapon()) return;
 	
 	InteractionComponent->GetEquippedWeapon()->StopAim();
+}
+
+void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("AKangPlayerCharacter::Reload"))
+	if (!InteractionComponent->GetEquippedWeapon())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
+		return;
+	}
+
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InteractionComponent->GetEquippedWeapon());
+
+	if (RangedWeapon)
+		RangedWeapon->Reload();
 }
 
 
