@@ -4,6 +4,8 @@
 #include "KangPlayerCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 #include "../Weapon/WeaponBase.h"
 #include "../Weapon/RangedWeapon.h"
@@ -19,6 +21,18 @@ AKangPlayerCharacter::AKangPlayerCharacter()
 
 	HUDComponent = CreateDefaultSubobject<UHUDComponent>(TEXT("HUDComponent"));
 	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
+
+	// 式式 蘋詭塭 式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->TargetArmLength = 300.f;
+	CameraBoom->SocketOffset = FVector(0.f, 80.f, 80.f);
+	CameraBoom->bUsePawnControlRotation = true;
+
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->FieldOfView = DefaultFOV;
 }
 
 // Called when the game starts or when spawned
@@ -37,11 +51,16 @@ void AKangPlayerCharacter::Tick(float DeltaTime)
 
 	if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(InteractionComponent->GetEquippedWeapon()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Test"))
+		//UE_LOG(LogTemp, Warning, TEXT("Test"))
 		HUDComponent->UpdateAmmoUI(
 			Ranged->GetCurrentAmmo(),
 			Ranged->GetReserveAmmo(),
 			Ranged->GetWeaponName()
+		);
+
+		float TargetFOV = bIsAiming ? AimFOV : DefaultFOV;
+		FollowCamera->SetFieldOfView(
+			FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, AimInterpSpeed)
 		);
 	}
 
@@ -171,6 +190,7 @@ void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
 		return;
 	}
+	bIsAiming = true;
 	EnterCombatMode();
 	InteractionComponent->GetEquippedWeapon()->StartAim();
 }
@@ -179,6 +199,7 @@ void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 {
 	if (!InteractionComponent->GetEquippedWeapon()) return;
 	
+	bIsAiming = false;
 	InteractionComponent->GetEquippedWeapon()->StopAim();
 }
 

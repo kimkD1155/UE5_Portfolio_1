@@ -10,6 +10,8 @@ class UHUDComponent;
 class UInteractionComponent;
 class AWeaponBase;
 class UInputAction;
+class USpringArmComponent;
+class UCameraComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -99,5 +101,22 @@ protected:
 	void EnterCombatMode();
 	void ExitCombatMode();
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+// 카메라, FOV 처리 ( AIm )
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	USpringArmComponent* CameraBoom;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UCameraComponent* FollowCamera;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Aim")
+	float DefaultFOV = 90.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Aim")
+	float AimFOV = 60.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Aim")
+	float AimInterpSpeed = 10.f;
+
+	bool bIsAiming = false;
 };

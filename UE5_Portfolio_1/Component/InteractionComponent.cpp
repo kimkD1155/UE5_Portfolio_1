@@ -55,18 +55,6 @@ void UInteractionComponent::UpdateInteractionTarget()
 		HitResult, TraceStart, TraceEnd, ECC_Visibility, Params
 	);
 
-	//// 맞은 게 있으면 초록색, 없으면 빨간색
-	//DrawDebugLine(
-	//	GetWorld(),
-	//	TraceStart,
-	//	bHit ? HitResult.ImpactPoint : TraceEnd,
-	//	bHit ? FColor::Green : FColor::Red,
-	//	false,    // 지속 표시 여부 (false = 매 프레임 갱신)
-	//	-1.f,     // 지속 시간 (-1 = 1프레임만)
-	//	0,
-	//	1.5f      // 선 두께
-	//);
-
 	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
 
 	// IInteractable 구현한 액터만 대상으로

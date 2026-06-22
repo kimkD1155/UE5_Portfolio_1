@@ -27,6 +27,7 @@ protected:
     bool bIsAutomatic = true;
 
     FTimerHandle FireTimerHandle;
+    
 
     void FireOnce();
 

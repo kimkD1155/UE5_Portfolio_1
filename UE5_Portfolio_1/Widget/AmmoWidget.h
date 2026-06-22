@@ -25,6 +25,7 @@ protected:
     UPROPERTY(meta = (BindWidget))
     UTextBlock* AmmoText;
 
+
     UPROPERTY(meta = (BindWidget))
     UTextBlock* WeaponNameText;
 };

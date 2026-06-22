@@ -8,6 +8,7 @@
 ARifle::ARifle()
 {
     WeaponType = EWeaponType::Rifle;
+	WeaponName = FText::FromString(TEXT("Ak47"));
 }
 
 void ARifle::StartFire()
