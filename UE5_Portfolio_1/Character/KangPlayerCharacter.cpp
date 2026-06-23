@@ -6,6 +6,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Animation/AnimMontage.h"
 
 #include "../Weapon/WeaponBase.h"
 #include "../Weapon/RangedWeapon.h"
@@ -26,7 +27,7 @@ AKangPlayerCharacter::AKangPlayerCharacter()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.f;
-	CameraBoom->SocketOffset = FVector(0.f, 80.f, 80.f);
+	CameraBoom->SocketOffset = FVector(0.f, 80.f, 60.f);
 	CameraBoom->bUsePawnControlRotation = true;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -205,7 +206,6 @@ void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AKangPlayerCharacter::Reload"))
 	if (!InteractionComponent->GetEquippedWeapon())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
@@ -214,8 +214,25 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InteractionComponent->GetEquippedWeapon());
 
-	if (RangedWeapon)
+	if (RangedWeapon && RifleReloadMontage)
+	{
+		if (RangedWeapon->GetGunState() == EGunState::Reloading)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Already reloading"));
+			return;
+		}
+
+		if (RangedWeapon->GetCurrentAmmo() == RangedWeapon->GetGunData().MagazineSize)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Ammo is full"));
+			return;
+		}
 		RangedWeapon->Reload();
+		PlayAnimMontage(RifleReloadMontage);
+	}
+		
+		
+
 }
 
 

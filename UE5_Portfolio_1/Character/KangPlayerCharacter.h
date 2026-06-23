@@ -12,6 +12,7 @@ class AWeaponBase;
 class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
+class UAnimMontage;
 struct FInputActionValue;
 
 UCLASS()
@@ -119,4 +120,13 @@ protected:
 	float AimInterpSpeed = 10.f;
 
 	bool bIsAiming = false;
+//天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天
+// 跦顫輿 盪濰
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
+	TObjectPtr<UAnimMontage> PistolReloadMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
+	TObjectPtr<UAnimMontage> RifleReloadMontage;
+
 };

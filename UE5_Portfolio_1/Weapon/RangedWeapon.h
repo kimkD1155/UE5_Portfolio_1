@@ -21,22 +21,22 @@ struct FGunData
     GENERATED_BODY()
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    int32 MagazineSize = 30;
+    int32 MagazineSize;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    int32 MaxReserveAmmo = 90;
+    int32 MaxReserveAmmo;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    float Damage = 25.f;
+    float Damage;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    float Range = 10000.f;
+    float Range;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    float FireRate = 0.1f;
+    float FireRate;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    float ReloadTime = 2.f;
+    float ReloadTime;
 };
 
 UCLASS()
@@ -56,7 +56,9 @@ public:
     bool CanFire() const;
     bool CanReload() const;
     void Reload();
-
+    
+	UFUNCTION(BlueprintPure)
+	FGunData GetGunData() const { return GunData; }
 
     UFUNCTION(BlueprintPure)
     EGunState GetGunState() const { return GunState; }
