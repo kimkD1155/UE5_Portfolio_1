@@ -19,6 +19,7 @@ void ARifle::StartFire()
         //    UGameplayStatics::PlaySoundAtLocation(this, EmptySound, GetActorLocation());
         return;
     }
+    
 
     if (bIsAutomatic)
     {
