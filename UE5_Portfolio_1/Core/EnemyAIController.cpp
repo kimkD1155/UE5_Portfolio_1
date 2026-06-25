@@ -2,4 +2,24 @@
 
 
 #include "EnemyAIController.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
+AEnemyAIController::AEnemyAIController()
+{
+}
+
+void AEnemyAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	UE_LOG(LogTemp, Warning, TEXT("Possessed: %s"), *GetNameSafe(InPawn));
+
+	if (!BehaviorTreeAsset) return;
+
+	UBlackboardComponent* BlackboardComp = nullptr;
+	if (UseBlackboard(BehaviorTreeAsset->BlackboardAsset, BlackboardComp))
+	{
+		Blackboard = BlackboardComp;
+		RunBehaviorTree(BehaviorTreeAsset);
+	}
+}

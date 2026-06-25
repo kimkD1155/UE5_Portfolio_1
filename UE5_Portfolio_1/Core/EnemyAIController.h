@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "EnemyAIController.generated.h"
 
+class UBehaviorTree;
 /**
  * 
  */
@@ -13,5 +14,13 @@ UCLASS()
 class UE5_PORTFOLIO_1_API AEnemyAIController : public AAIController
 {
 	GENERATED_BODY()
-	
+
+public:
+	AEnemyAIController();
+
+protected:
+	virtual void OnPossess(APawn* InPawn) override;
+
+	UPROPERTY(EditAnywhere, Category = "AI")
+	UBehaviorTree* BehaviorTreeAsset;
 };

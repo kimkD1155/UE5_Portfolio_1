@@ -30,17 +30,6 @@ void AEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-	if (!PlayerPawn) return;
-
-	float Dist = FVector::Dist(GetActorLocation(), PlayerPawn->GetActorLocation());
-	if (Dist <= DetectRange)
-	{
-		if (AAIController* AIC = Cast<AAIController>(GetController()))
-		{
-			AIC->MoveToActor(PlayerPawn, 50.f);
-		}
-	}
 }
 
 // Called to bind functionality to input
