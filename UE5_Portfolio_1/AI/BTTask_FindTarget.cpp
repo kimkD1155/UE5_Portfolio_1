@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "Kismet/GameplayStatics.h"
+#include "NavigationSystem.h"
 
 
 UBTTask_FindTarget::UBTTask_FindTarget()
@@ -42,12 +43,36 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	OwnerComp.GetBlackboardComponent()->SetValueAsObject(TargetActorKey.SelectedKeyName, ClosestWall);
 	//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-	// 테스트용: 직접 MoveTo 호출해서 결과 확인
-	EPathFollowingRequestResult::Type Result = AIC->MoveToActor(ClosestWall, 50.f);
-	UE_LOG(LogTemp, Warning, TEXT("MoveToActor Result: %d"), (int32)Result);
-	//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-	
-	
+	// ── 핵심: 타겟 위치를 NavMesh 위로 투영해서 가장 가까운 유효 지점 찾기 ──
+	//UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+
+	//if (NavSys)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("NavSys is not null"));
+	//	FNavLocation ProjectedLocation;
+	//	// 큰 범위로 검색 (콜리전 구멍보다 충분히 크게)
+	//	FVector QueryExtent(500.f, 500.f, 500.f);
+
+	//	if (NavSys->ProjectPointToNavigation(ClosestWall->GetActorLocation(), ProjectedLocation, QueryExtent))
+	//	{
+	//		AIC->MoveToLocation(ProjectedLocation.Location, 50.f);
+	//		EPathFollowingRequestResult::Type MoveResult = AIC->MoveToLocation(ProjectedLocation.Location, 50.f);
+	//		UE_LOG(LogTemp, Warning, TEXT("[%s] MoveToLocation Result: %d, ProjectedLoc: %s"),
+	//			*AIC->GetPawn()->GetName(),
+	//			(int32)MoveResult,
+	//			*ProjectedLocation.Location.ToString());
+	//	}
+	//	else
+	//	{
+	//		UE_LOG(LogTemp, Warning, TEXT("Failed to project wall location to NavMesh"));
+	//		return EBTNodeResult::Failed;
+	//	}
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("NavSys is null"));
+	//}
+
 	return EBTNodeResult::Succeeded;
 
 

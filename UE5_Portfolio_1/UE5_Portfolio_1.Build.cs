@@ -8,7 +8,19 @@ public class UE5_Portfolio_1 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Slate", "SlateCore" });
+		PublicDependencyModuleNames.AddRange(new string[] 
+		{
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"EnhancedInput", 
+			"UMG", 
+			"Slate", 
+			"SlateCore" ,
+			"NavigationSystem" ,
+			"AIModule"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
