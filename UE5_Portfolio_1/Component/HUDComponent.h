@@ -7,6 +7,7 @@
 #include "../Widget/InteractHintWidget.h"
 #include "../Widget/CrosshairWidget.h"
 #include "../Widget/AmmoWidget.h"
+#include "../Widget/BarricadeWidget.h"
 #include "HUDComponent.generated.h"
 
 
@@ -45,15 +46,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<UAmmoWidget> AmmoWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UBarricadeWidget> BarricadeWidgetClass;
+
 private:
 	UPROPERTY()
 	ACharacter* OwnerCharacter = nullptr;
 
 	UPROPERTY()
 	UCrosshairWidget* CrosshairWidget = nullptr;
-
 	UPROPERTY()
 	UInteractHintWidget* InteractHintWidget = nullptr;
 	UPROPERTY()
 	UAmmoWidget* AmmoWidget = nullptr;
+	UPROPERTY()
+	UBarricadeWidget* BarricadeWidget = nullptr;
 };

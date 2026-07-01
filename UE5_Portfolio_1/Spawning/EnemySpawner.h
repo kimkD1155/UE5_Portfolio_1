@@ -36,7 +36,7 @@ protected:
 	TSubclassOf<AEnemyCharacter> EnemyClass;
 
 	UPROPERTY(EditAnywhere, Category = "Spawn")
-	int32 SpawnCount = 5;
+	int32 SpawnCount = 1;
 
 	void SpawnEnemies();
 };

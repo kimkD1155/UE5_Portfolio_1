@@ -29,7 +29,7 @@ ABarricade::ABarricade()
 void ABarricade::BeginPlay()
 {
 	Super::BeginPlay();
-	/*OnTakeAnyDamage.AddDynamic(this, &ABarricade::TakeDamageHandler);*/
+	OnTakeAnyDamage.AddDynamic(this, &ABarricade::TakeDamageHandler);
 
 	CurrentHealth = MaxHealth;
 }
@@ -38,26 +38,27 @@ void ABarricade::BeginPlay()
 void ABarricade::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	UE_LOG(LogTemp, Warning, TEXT("CurrentHealth: %.1f"), CurrentHealth);
 }
 
-//float ABarricade::TakeDamageHandler(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-//	AController* InstigatedBy, AActor* DamageCauser)
-//{
-//	if (IsDestroyed())
-//	{
-//		return 0.f;
-//	}
-//
-//	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
-//
-//	if (IsDestroyed())
-//	{
-//		OnBarricadeDestroyed();
-//	}
-//
-//	return Damage;
-//}
+void ABarricade::TakeDamageHandler(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("TakeDamageHandler called: %.1f"), Damage);
+
+	if (IsDestroyed())
+	{
+		return;
+	}
+
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	OnHPChanged.Broadcast(CurrentHealth, MaxHealth); 
+
+	if (IsDestroyed())
+	{
+		OnBarricadeDestroyed();
+	}
+}
 
 void ABarricade::Repair(float RepairAmount)
 {
@@ -67,6 +68,7 @@ void ABarricade::Repair(float RepairAmount)
 	}
 
 	CurrentHealth = FMath::Clamp(CurrentHealth + RepairAmount, 0.f, MaxHealth);
+	OnHPChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
 void ABarricade::OnBarricadeDestroyed()

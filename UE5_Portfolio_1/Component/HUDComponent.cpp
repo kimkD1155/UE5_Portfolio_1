@@ -48,14 +48,19 @@ void UHUDComponent::BeginPlay()
 			AmmoWidget->AddToViewport();
 			AmmoWidget->ShowAmmoUI();
 		}
-		else
+	}
+
+	if (BarricadeWidgetClass)
+	{
+		BarricadeWidget = CreateWidget<UBarricadeWidget>(GetWorld(), BarricadeWidgetClass);
+		if (BarricadeWidget)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AmmoWidget creation FAILED"));
+			BarricadeWidget->AddToViewport();
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("AmmoWidgetClass is None!"));
+		UE_LOG(LogTemp, Warning, TEXT("BarricadeWidgetClass is not set in HUDComponent."));
 	}
 	
 }

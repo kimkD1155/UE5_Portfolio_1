@@ -10,6 +10,8 @@
 class UStaticMeshComponent;
 class UBoxComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHPChanged, float, CurrentHP, float, MaxHP);
+
 UCLASS()
 class UE5_PORTFOLIO_1_API ABarricade : public AActor, public IInteractableInterface
 {
@@ -33,6 +35,9 @@ public:
 	virtual void Interact_Implementation(ACharacter* Interactor) override;
 	virtual FText GetInteractHintText_Implementation() override;
 
+	UPROPERTY(BlueprintAssignable, Category = "Barricade")
+	FOnHPChanged OnHPChanged;
+
 	UFUNCTION(BlueprintPure, Category = "Barricade")
 	float GetCurrentHealth() const { return CurrentHealth; }
 
@@ -46,9 +51,9 @@ public:
 	bool IsFullHealth() const { return CurrentHealth >= MaxHealth; }
 
 protected:
-	/*UFUNCTION()
-	virtual float TakeDamageHandler(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
-		class AController* InstigatedBy, AActor* DamageCauser);*/
+	UFUNCTION()
+	virtual void TakeDamageHandler(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
+		class AController* InstigatedBy, AActor* DamageCauser);
 
 	void Repair(float RepairAmount);
 	void OnBarricadeDestroyed();
@@ -60,7 +65,7 @@ protected:
 	UBoxComponent* BlockingVolume;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barricade")
-	float MaxHealth = 500.f;
+	float MaxHealth = 90.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Barricade")
 	float CurrentHealth;
