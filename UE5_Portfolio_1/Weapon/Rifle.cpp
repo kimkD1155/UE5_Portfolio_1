@@ -82,7 +82,7 @@ void ARifle::FireOnce()
     Params.AddIgnoredActor(OwnerCharacter);
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
-        HitResult, TraceStart, TraceEnd, ECC_Visibility, Params
+        HitResult, TraceStart, TraceEnd, ECC_Pawn, Params
     );
 
     // 式式 等嘐雖 式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式
@@ -103,6 +103,6 @@ void ARifle::FireOnce()
 #if WITH_EDITOR
     DrawDebugLine(GetWorld(), TraceStart,
         bHit ? HitResult.ImpactPoint : TraceEnd,
-        FColor::Red, false, 0.5f, 0, 1.f);
+        FColor::Red, false, 0.1f, 0, 1.f);
 #endif
 }

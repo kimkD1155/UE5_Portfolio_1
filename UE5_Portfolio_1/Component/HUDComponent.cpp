@@ -4,6 +4,8 @@
 #include "HUDComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/Character.h"
+#include "../Props/Barricade.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UHUDComponent::UHUDComponent()
@@ -62,6 +64,18 @@ void UHUDComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("BarricadeWidgetClass is not set in HUDComponent."));
 	}
+
+	TArray<AActor*> Barricades;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABarricade::StaticClass(), Barricades);
+	if (Barricades.Num() > 0)
+	{
+		ABarricade* Barricade = Cast<ABarricade>(Barricades[0]);
+		if (BarricadeWidget && Barricade)
+		{
+			BarricadeWidget->InitWidget(Barricade);
+			Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI);
+		}
+	}
 	
 }
 
@@ -93,4 +107,18 @@ void UHUDComponent::UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo, const FTe
 	AmmoWidget->UpdateAmmo(CurrentAmmo, ReserveAmmo);
 	AmmoWidget->UpdateWeaponName(WeaponName);
 	AmmoWidget->ShowAmmoUI();
+}
+
+void UHUDComponent::InitBarricadeUI(ABarricade* Barricade)
+{
+	if (!BarricadeWidget || !Barricade) return;
+	BarricadeWidget->InitWidget(Barricade);
+	Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI); // ¹ÙÀÎµù
+}
+
+void UHUDComponent::UpdateBarricadeUI(float CurrentHP, float MaxHP)
+{
+	if (!BarricadeWidget) return;
+
+	BarricadeWidget->UpdateHP(CurrentHP, MaxHP);
 }

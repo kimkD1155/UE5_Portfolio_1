@@ -42,36 +42,19 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 	if (!ClosestWall) return EBTNodeResult::Failed;
 
 	OwnerComp.GetBlackboardComponent()->SetValueAsObject(TargetActorKey.SelectedKeyName, ClosestWall);
-	//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-	// ── 핵심: 타겟 위치를 NavMesh 위로 투영해서 가장 가까운 유효 지점 찾기 ──
-	//UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 
-	//if (NavSys)
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("NavSys is not null"));
-	//	FNavLocation ProjectedLocation;
-	//	// 큰 범위로 검색 (콜리전 구멍보다 충분히 크게)
-	//	FVector QueryExtent(500.f, 500.f, 500.f);
+	// 랜덤 오프셋 적용
+	FVector RandomOffset = FMath::VRand();
+	RandomOffset.Z = 0.f;
+	RandomOffset.Normalize();
+	RandomOffset *= FMath::RandRange(200.f, 500.f);
 
-	//	if (NavSys->ProjectPointToNavigation(ClosestWall->GetActorLocation(), ProjectedLocation, QueryExtent))
-	//	{
-	//		AIC->MoveToLocation(ProjectedLocation.Location, 50.f);
-	//		EPathFollowingRequestResult::Type MoveResult = AIC->MoveToLocation(ProjectedLocation.Location, 50.f);
-	//		UE_LOG(LogTemp, Warning, TEXT("[%s] MoveToLocation Result: %d, ProjectedLoc: %s"),
-	//			*AIC->GetPawn()->GetName(),
-	//			(int32)MoveResult,
-	//			*ProjectedLocation.Location.ToString());
-	//	}
-	//	else
-	//	{
-	//		UE_LOG(LogTemp, Warning, TEXT("Failed to project wall location to NavMesh"));
-	//		return EBTNodeResult::Failed;
-	//	}
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("NavSys is null"));
-	//}
+	FVector TargetLocation = ClosestWall->GetActorLocation() + RandomOffset;
+	
+	UE_LOG(LogTemp, Warning, TEXT("TargetLocation: %s"), *TargetLocation.ToString());
+	UE_LOG(LogTemp, Warning, TEXT("TargetLocationKey: %s"), *TargetLocationKey.SelectedKeyName.ToString());
+	
+	OwnerComp.GetBlackboardComponent()->SetValueAsVector(TargetLocationKey.SelectedKeyName, TargetLocation);
 
 	return EBTNodeResult::Succeeded;
 

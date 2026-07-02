@@ -10,19 +10,20 @@
 AEnemySpawner::AEnemySpawner()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
-	SpawnZone = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawnZone"));
-	RootComponent = SpawnZone;
-	SpawnZone->SetBoxExtent(FVector(500.f, 500.f, 50.f));
-	SpawnZone->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 시각화 + 범위 계산용
+	PrimaryActorTick.bCanEverTick = false;
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 }
 
 // Called when the game starts or when spawned
 void AEnemySpawner::BeginPlay()
 {
 	Super::BeginPlay();
-	SpawnEnemies();
+
+	CurrentSpawnInterval = InitialSpawnInterval;
+
+	// 스폰 타이머 시작
+	GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, CurrentSpawnInterval, true);
+	GetWorldTimerManager().SetTimer(DifficultyTimerHandle, this, &AEnemySpawner::UpdateDifficulty, DifficultyUpInterval, true);
 }
 
 // Called every frame
@@ -32,24 +33,20 @@ void AEnemySpawner::Tick(float DeltaTime)
 
 }
 
-void AEnemySpawner::SpawnEnemies()
+void AEnemySpawner::SpawnEnemy()
 {
 	if (!EnemyClass) return;
 
-	const FVector Origin = SpawnZone->GetComponentLocation();
-	const FVector Extent = SpawnZone->GetScaledBoxExtent();
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	for (int32 i = 0; i < SpawnCount; ++i)
-	{
-		// 박스 범위 안에서 랜덤 위치 계산
-		FVector RandomLocation = FVector(
-			Origin.X + FMath::RandRange(-Extent.X, Extent.X),
-			Origin.Y + FMath::RandRange(-Extent.Y, Extent.Y),
-			Origin.Z
-		);
+	GetWorld()->SpawnActor<ACharacter>(EnemyClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+}
 
-		FRotator SpawnRotation = FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f);
+void AEnemySpawner::UpdateDifficulty()
+{
+	CurrentSpawnInterval = FMath::Max(CurrentSpawnInterval - SpawnIntervalDecrement, MinSpawnInterval);
+	GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, CurrentSpawnInterval, true);
 
-		GetWorld()->SpawnActor<AEnemyCharacter>(EnemyClass, RandomLocation, SpawnRotation);
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Spawn interval: %.1f"), CurrentSpawnInterval);
 }

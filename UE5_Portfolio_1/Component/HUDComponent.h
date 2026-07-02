@@ -10,6 +10,7 @@
 #include "../Widget/BarricadeWidget.h"
 #include "HUDComponent.generated.h"
 
+class ABarricade;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE5_PORTFOLIO_1_API UHUDComponent : public UActorComponent
@@ -30,10 +31,17 @@ public:
 
 		
 public:
+// 상호작용 힌트 관련
 	void ShowInteractHint(const FText& Text);
 	void HideInteractHint();
 
+// 탄약 관련
 	void UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo, const FText& WeaponName);
+
+// 바리케이드 관련
+	void InitBarricadeUI(ABarricade* Barricade);
+	UFUNCTION()
+	void UpdateBarricadeUI(float CurrentHP, float MaxHP);
 
 protected:
 

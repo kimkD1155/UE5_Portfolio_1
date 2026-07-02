@@ -25,6 +25,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	FBlackboardKeySelector TargetActorKey;
 
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	FBlackboardKeySelector TargetLocationKey;
+
 	UPROPERTY(EditAnywhere, Category = "Detection")
 	FName TargetTag = TEXT("DefenseWall");
 };

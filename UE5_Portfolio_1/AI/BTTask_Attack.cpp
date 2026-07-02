@@ -32,6 +32,9 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed; // 범위 밖이면 다시 MoveTo로
 	}
 
+	//UE_LOG(LogTemp, Warning, TEXT("Target: %s"), Target ? *Target->GetName() : TEXT("NULL"));
+	//UE_LOG(LogTemp, Warning, TEXT("Distance: %.1f / AttackRange: %.1f"), Distance, AttackRange);
+
 	// 데미지 적용
 	UGameplayStatics::ApplyDamage(
 		Target,

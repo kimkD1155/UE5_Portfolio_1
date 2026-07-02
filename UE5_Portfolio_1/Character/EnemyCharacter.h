@@ -26,7 +26,20 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+
+
 protected:
-	UPROPERTY(EditAnywhere)
-	float DetectRange = 1000.f;
+
+	UFUNCTION()
+	void TakeDamageHandler(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
+		class AController* InstigatedBy, AActor* DamageCauser);
+
+	void Die();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	float MaxHealth = 100.f;
+
+	UPROPERTY(VisibleAnywhere, Category = "Enemy")
+	float CurrentHealth;
+
 };

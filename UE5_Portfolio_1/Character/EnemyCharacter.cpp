@@ -22,7 +22,8 @@ AEnemyCharacter::AEnemyCharacter()
 void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	CurrentHealth = MaxHealth;
+	OnTakeAnyDamage.AddDynamic(this, &AEnemyCharacter::TakeDamageHandler);
 }
 
 // Called every frame
@@ -39,3 +40,29 @@ void AEnemyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 }
 
+void AEnemyCharacter::TakeDamageHandler(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	if (CurrentHealth <= 0.f) return;
+
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	UE_LOG(LogTemp, Warning, TEXT("Enemy HP: %.1f / %.1f"), CurrentHealth, MaxHealth);
+
+	if (CurrentHealth <= 0.f)
+	{
+		Die();
+	}
+}
+
+void AEnemyCharacter::Die()
+{
+	// AI 정지
+	if (AController* AC = GetController())
+	{
+		AC->UnPossess();
+	}
+
+	// 충돌 끄고 제거
+	SetActorEnableCollision(false);
+	Destroy();
+}

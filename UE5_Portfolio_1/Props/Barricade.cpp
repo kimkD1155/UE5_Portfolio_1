@@ -38,13 +38,12 @@ void ABarricade::BeginPlay()
 void ABarricade::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UE_LOG(LogTemp, Warning, TEXT("CurrentHealth: %.1f"), CurrentHealth);
 }
 
 void ABarricade::TakeDamageHandler(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	AController* InstigatedBy, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("TakeDamageHandler called: %.1f"), Damage);
+	/*UE_LOG(LogTemp, Warning, TEXT("TakeDamageHandler called: %.1f"), Damage);*/
 
 	if (IsDestroyed())
 	{

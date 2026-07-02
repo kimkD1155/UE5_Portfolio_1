@@ -27,16 +27,35 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	// 스폰 구역을 에디터에서 박스로 시각화/조절
-	UPROPERTY(VisibleAnywhere)
-	UBoxComponent* SpawnZone;
 
 	// 스폰할 적 클래스 (BP에서 지정)
 	UPROPERTY(EditAnywhere, Category = "Spawn")
 	TSubclassOf<AEnemyCharacter> EnemyClass;
 
-	UPROPERTY(EditAnywhere, Category = "Spawn")
-	int32 SpawnCount = 1;
+	// 초기 스폰 간격 (초)
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float InitialSpawnInterval = 2.0f;
 
-	void SpawnEnemies();
+	// 최소 스폰 간격 (초)
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float MinSpawnInterval = 1.0f;
+
+	// 스폰 간격 감소량 (난이도 업 시마다)
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float SpawnIntervalDecrement = 0.5f;
+
+	// 난이도 업 주기 (초)
+	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+	float DifficultyUpInterval = 30.0f;
+
+
+
+	float CurrentSpawnInterval;
+
+	FTimerHandle SpawnTimerHandle;
+	FTimerHandle DifficultyTimerHandle;
+
+	void SpawnEnemy();
+	void UpdateDifficulty();
+
 };
