@@ -87,6 +87,10 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EIC->BindAction(AimAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::StartAim);
 		EIC->BindAction(AimAction, ETriggerEvent::Completed, this, &AKangPlayerCharacter::StopAim);
 		EIC->BindAction(ReloadAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Reload);
+		EIC->BindAction(Num1Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon1);
+		EIC->BindAction(Num2Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon2);
+		EIC->BindAction(Num3Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon3);
+		EIC->BindAction(Num4Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon4);
 	}
 	else
 	{
@@ -233,6 +237,26 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 		
 		
 
+}
+
+void AKangPlayerCharacter::EquipWeapon1(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 1 action triggered!"));
+}
+
+void AKangPlayerCharacter::EquipWeapon2(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 2 action triggered!"));
+}
+
+void AKangPlayerCharacter::EquipWeapon3(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 3 action triggered!"));
+}
+
+void AKangPlayerCharacter::EquipWeapon4(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 4 action triggered!"));
 }
 
 

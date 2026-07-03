@@ -59,6 +59,14 @@ protected:
 	UInputAction* AimAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* ReloadAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* Num1Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* Num2Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* Num3Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* Num4Action;
 
 protected:
 	void Move(const FInputActionValue& Value);
@@ -72,6 +80,10 @@ protected:
 	void StartAim(const FInputActionValue& Value);
 	void StopAim(const FInputActionValue& Value);
 	void Reload(const FInputActionValue& Value);
+	void EquipWeapon1(const FInputActionValue& Value);
+	void EquipWeapon2(const FInputActionValue& Value);
+	void EquipWeapon3(const FInputActionValue& Value);
+	void EquipWeapon4(const FInputActionValue& Value);
 //天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天
 // 闡ん凱お
 protected:
