@@ -51,9 +51,9 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	FVector TargetLocation = ClosestWall->GetActorLocation() + RandomOffset;
 	
-	UE_LOG(LogTemp, Warning, TEXT("TargetLocation: %s"), *TargetLocation.ToString());
+	/*UE_LOG(LogTemp, Warning, TEXT("TargetLocation: %s"), *TargetLocation.ToString());
 	UE_LOG(LogTemp, Warning, TEXT("TargetLocationKey: %s"), *TargetLocationKey.SelectedKeyName.ToString());
-	
+	*/
 	OwnerComp.GetBlackboardComponent()->SetValueAsVector(TargetLocationKey.SelectedKeyName, TargetLocation);
 
 	return EBTNodeResult::Succeeded;

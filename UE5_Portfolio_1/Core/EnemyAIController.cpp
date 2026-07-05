@@ -12,7 +12,7 @@ AEnemyAIController::AEnemyAIController()
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	UE_LOG(LogTemp, Warning, TEXT("Possessed: %s"), *GetNameSafe(InPawn));
+	
 
 	if (!BehaviorTreeAsset) return;
 

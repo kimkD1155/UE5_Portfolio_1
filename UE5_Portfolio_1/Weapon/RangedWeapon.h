@@ -56,7 +56,9 @@ public:
     bool CanFire() const;
     bool CanReload() const;
     void Reload();
-    
+
+    UFUNCTION()
+    void SetGunState(EGunState NewState);
 	UFUNCTION(BlueprintPure)
 	FGunData GetGunData() const { return GunData; }
 
@@ -89,6 +91,8 @@ protected:
 
     FTimerHandle ReloadTimerHandle;
 
-    void SetGunState(EGunState NewState);
-    void OnReloadFinished();
+    
+
+public:
+    void ReloadFinished();
 };

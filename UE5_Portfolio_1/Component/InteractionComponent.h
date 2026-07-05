@@ -35,12 +35,6 @@ protected:
 	float InteractTraceDistance = 600.f;
 
 public:
-	// 무기 픽업, 드랍
-	void PickupWeapon(AWeaponBase* Weapon);
-	void DropWeapon();
-
-	UFUNCTION(BlueprintPure)
-	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
 	UFUNCTION(BlueprintPure)
 	AActor* GetCurrentInteractTarget() const { return CurrentInteractTarget; }
 
@@ -55,7 +49,5 @@ private:
 
 	UPROPERTY()
 	AActor* CurrentInteractTarget = nullptr;   // 현재 조준 중인 대상
-	UPROPERTY()
-	AWeaponBase* EquippedWeapon = nullptr;
 	//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 };

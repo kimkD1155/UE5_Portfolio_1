@@ -44,7 +44,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		nullptr
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("Enemy attacked barricade: %.1f damage"), AttackDamage);
+	
 
 	// 쿨다운 대기 후 Success
 	FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);

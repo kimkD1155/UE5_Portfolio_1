@@ -88,30 +88,3 @@ void UInteractionComponent::UpdateInteractionTarget()
 	}
 	// 현재 타겟액터가 있는지 확인
 }
-
-
-void UInteractionComponent::PickupWeapon(AWeaponBase* Weapon)
-{
-	if (!Weapon) return;
-
-	if (EquippedWeapon)
-		DropWeapon();
-
-	EquippedWeapon = Weapon;
-	EquippedWeapon->Equip(OwnerCharacter);
-}
-
-
-
-void UInteractionComponent::DropWeapon()
-{
-	if (!EquippedWeapon) return;
-
-	EquippedWeapon->Unequip();
-
-	FVector DropLocation = OwnerCharacter->GetActorLocation()
-		+ OwnerCharacter->GetActorForwardVector() * 100.f
-		+ FVector(0.f, 0.f, -50.f);
-	EquippedWeapon->SetActorLocation(DropLocation);
-	EquippedWeapon = nullptr;
-}

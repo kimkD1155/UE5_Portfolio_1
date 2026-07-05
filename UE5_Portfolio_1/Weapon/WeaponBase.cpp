@@ -3,7 +3,7 @@
 
 #include "WeaponBase.h"
 #include "Components/StaticMeshComponent.h"
-#include "../Component/InteractionComponent.h"
+#include "../Component/InventoryComponent.h"
 #include "../Character/KangPlayerCharacter.h"
 
 
@@ -76,9 +76,9 @@ void AWeaponBase::Interact_Implementation(ACharacter* Interactor)
 {
     if (AKangPlayerCharacter* Character = Cast<AKangPlayerCharacter>(Interactor))
     {
-        UInteractionComponent* InteractionComp = Character->FindComponentByClass<UInteractionComponent>();
-        if (InteractionComp)
-            InteractionComp->PickupWeapon(this);
+        UInventoryComponent* InventoryComponent = Character->FindComponentByClass<UInventoryComponent>();
+        if (InventoryComponent)
+            InventoryComponent->PickupWeapon(this);
     }
 }
 

@@ -6,9 +6,14 @@
 #include "GameFramework/Character.h"
 #include "KangPlayerCharacter.generated.h"
 
+//ㅡㅡㅡㅡㅡㅡㅡ전방 선언ㅡㅡㅡㅡㅡㅡ
+// 컴포넌트
 class UHUDComponent;
 class UInteractionComponent;
+class UInventoryComponent;
+
 class AWeaponBase;
+class ARangedWeapon;
 class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
@@ -91,14 +96,19 @@ protected:
 	UHUDComponent* HUDComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInteractionComponent* InteractionComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UInventoryComponent* InventoryComponent;
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-
+// 변수
 	float WalkSpeed = 300.f;
 	float RunSpeed = 600.f;
+
 
 	
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponType GetCurrentWeaponType() const;
+	UPROPERTY()
+	ARangedWeapon* ReloadingWeapon;
 	
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 전투모드
@@ -133,12 +143,19 @@ protected:
 
 	bool bIsAiming = false;
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-// 몽타주 저장
+// 몽타주 및 애니메이션 관련
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
 	TObjectPtr<UAnimMontage> PistolReloadMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
 	TObjectPtr<UAnimMontage> RifleReloadMontage;
+
+
+public:
+	UFUNCTION()
+	void OnReloadNotify();
+	UFUNCTION()
+	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 };
