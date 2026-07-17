@@ -2,7 +2,7 @@
 
 
 #include "AnimNotify_ReloadFinished.h"
-#include "../Animation/KangAnimInstance.h"
+#include "../KangAnimInstance.h"
 
 void UAnimNotify_ReloadFinished::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
