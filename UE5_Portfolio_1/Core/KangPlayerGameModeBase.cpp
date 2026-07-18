@@ -3,10 +3,12 @@
 
 #include "KangPlayerGameModeBase.h"
 #include "UObject/ConstructorHelpers.h"
+#include "KangPlayerState.h"
 
 AKangPlayerGameModeBase::AKangPlayerGameModeBase()
 {
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Character/Blueprint/BP_Player"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
+	PlayerStateClass = AKangPlayerState::StaticClass();
 }

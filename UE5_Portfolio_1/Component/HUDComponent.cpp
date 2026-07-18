@@ -60,6 +60,13 @@ void UHUDComponent::BeginPlay()
 			BarricadeWidget->AddToViewport();
 		}
 	}
+	if (CoinWidgetClass)
+	{
+		CoinWidget = CreateWidget<UCoinWidget>(GetWorld(), CoinWidgetClass);
+		if (CoinWidget)
+			CoinWidget->AddToViewport();
+	}
+
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("BarricadeWidgetClass is not set in HUDComponent."));
@@ -121,4 +128,10 @@ void UHUDComponent::UpdateBarricadeUI(float CurrentHP, float MaxHP)
 	if (!BarricadeWidget) return;
 
 	BarricadeWidget->UpdateHP(CurrentHP, MaxHP);
+}
+
+void UHUDComponent::UpdateCoinUI(int32 CurrentCoin)
+{
+	if (!CoinWidget) return;
+	CoinWidget->UpdateCoin(CurrentCoin);
 }

@@ -26,7 +26,11 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	if (!Target) return EBTNodeResult::Failed;
 
 	// 거리 체크
-	float Distance = FVector::Dist(Pawn->GetActorLocation(), Target->GetActorLocation());
+	// 수정 - 컴포넌트 바운드 기준 가장 가까운 점
+	FBox BoundingBox = Target->GetComponentsBoundingBox();
+	FVector ClosestPoint = BoundingBox.GetClosestPointTo(Pawn->GetActorLocation());
+	float Distance = FVector::Dist(Pawn->GetActorLocation(), ClosestPoint);
+
 	if (Distance > AttackRange)
 	{
 		return EBTNodeResult::Failed; // 범위 밖이면 다시 MoveTo로

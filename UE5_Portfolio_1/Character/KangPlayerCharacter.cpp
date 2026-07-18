@@ -17,6 +17,9 @@
 #include "../Component/InventoryComponent.h"
 #include "../Animation/KangAnimInstance.h"
 
+//ㅡㅡㅡㅡㅡㅡ 커스텀 파일 ㅡㅡㅡㅡㅡㅡ
+#include "../Core/KangPlayerState.h"
+
 
 // Sets default values
 AKangPlayerCharacter::AKangPlayerCharacter()
@@ -46,7 +49,12 @@ void AKangPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//GetMesh()->SetOwnerNoSee(true);   // 1인칭 시점에서 메쉬 안 보이게(임시)
+	// 코인 델리게이트 바인딩
+	if (AKangPlayerState* PS = GetPlayerState<AKangPlayerState>())
+	{
+		PS->OnCoinChanged.AddDynamic(HUDComponent, &UHUDComponent::UpdateCoinUI);
+	}
+
 	if (UKangAnimInstance* AnimInst = Cast<UKangAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
 		AnimInst->OnReloadFinishedDelegate.AddDynamic(this, &AKangPlayerCharacter::OnReloadNotify);

@@ -42,4 +42,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
 	float CurrentHealth;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	int32 CoinReward = 10;
+
 };

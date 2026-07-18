@@ -5,7 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "AIController.h"
 #include "../Core/EnemyAIController.h"
-
+#include "../Core/KangPlayerState.h"
 
 // Sets default values
 AEnemyCharacter::AEnemyCharacter()
@@ -56,13 +56,20 @@ void AEnemyCharacter::TakeDamageHandler(AActor* DamagedActor, float Damage, cons
 
 void AEnemyCharacter::Die()
 {
-	// AI 정지
+	// 플레이어 코인 지급
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC)
+	{
+		if (AKangPlayerState* PS = PC->GetPlayerState<AKangPlayerState>())
+		{
+			PS->AddCoin(CoinReward);
+		}
+	}
+
 	if (AController* AC = GetController())
 	{
 		AC->UnPossess();
 	}
-
-	// 충돌 끄고 제거
 	SetActorEnableCollision(false);
 	Destroy();
 }

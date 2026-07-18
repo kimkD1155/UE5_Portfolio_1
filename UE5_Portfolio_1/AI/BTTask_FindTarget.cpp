@@ -20,7 +20,6 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TargetTag, FoundActors);
-
 	if (FoundActors.Num() == 0) return EBTNodeResult::Failed;
 
 	// 가장 가까운 방어벽 찾기
@@ -43,20 +42,12 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	OwnerComp.GetBlackboardComponent()->SetValueAsObject(TargetActorKey.SelectedKeyName, ClosestWall);
 
-	// 랜덤 오프셋 적용
-	FVector RandomOffset = FMath::VRand();
-	RandomOffset.Z = 0.f;
-	RandomOffset.Normalize();
-	RandomOffset *= FMath::RandRange(200.f, 500.f);
+	// 바리케이드 바운딩 박스 기준 가장 가까운 점 계산
+	FBox BoundingBox = ClosestWall->GetComponentsBoundingBox();
+	FVector ClosestPoint = BoundingBox.GetClosestPointTo(MyLocation);
+	ClosestPoint.Z = MyLocation.Z; // Z축 고정
 
-	FVector TargetLocation = ClosestWall->GetActorLocation() + RandomOffset;
-	
-	/*UE_LOG(LogTemp, Warning, TEXT("TargetLocation: %s"), *TargetLocation.ToString());
-	UE_LOG(LogTemp, Warning, TEXT("TargetLocationKey: %s"), *TargetLocationKey.SelectedKeyName.ToString());
-	*/
-	OwnerComp.GetBlackboardComponent()->SetValueAsVector(TargetLocationKey.SelectedKeyName, TargetLocation);
+	OwnerComp.GetBlackboardComponent()->SetValueAsVector(TargetLocationKey.SelectedKeyName, ClosestPoint);
 
 	return EBTNodeResult::Succeeded;
-
-
 }

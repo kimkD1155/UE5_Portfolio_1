@@ -34,7 +34,7 @@ protected:
 
 	// 초기 스폰 간격 (초)
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float InitialSpawnInterval = 2.0f;
+	float InitialSpawnInterval = 20.0f;
 
 	// 최소 스폰 간격 (초)
 	UPROPERTY(EditDefaultsOnly, Category = "Spawn")

@@ -8,6 +8,7 @@
 #include "../Widget/CrosshairWidget.h"
 #include "../Widget/AmmoWidget.h"
 #include "../Widget/BarricadeWidget.h"
+#include "../Widget/CoinWidget.h"
 #include "HUDComponent.generated.h"
 
 class ABarricade;
@@ -43,6 +44,10 @@ public:
 	UFUNCTION()
 	void UpdateBarricadeUI(float CurrentHP, float MaxHP);
 
+// 코인 관련
+	UFUNCTION()
+	void UpdateCoinUI(int32 CurrentCoin);
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
@@ -57,6 +62,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<UBarricadeWidget> BarricadeWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UCoinWidget> CoinWidgetClass;
+
 private:
 	UPROPERTY()
 	ACharacter* OwnerCharacter = nullptr;
@@ -69,4 +77,6 @@ private:
 	UAmmoWidget* AmmoWidget = nullptr;
 	UPROPERTY()
 	UBarricadeWidget* BarricadeWidget = nullptr;
+	UPROPERTY()
+	UCoinWidget* CoinWidget = nullptr;
 };
