@@ -63,6 +63,9 @@ void AWeaponBase::Equip(ACharacter* NewOwner)
         FAttachmentTransformRules::SnapToTargetNotIncludingScale,
         AttachSocketName
     );
+    UE_LOG(LogTemp, Warning, TEXT("Attached to socket: %s, Location: %s"),
+        *AttachSocketName.ToString(),
+        *GetActorLocation().ToString());
 }
 
 void AWeaponBase::Unequip()

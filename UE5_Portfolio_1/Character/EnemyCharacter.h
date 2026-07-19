@@ -26,7 +26,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-
+	UFUNCTION(BlueprintPure)
+	float GetCurrentHealth() const { return CurrentHealth; }
 
 protected:
 
@@ -37,7 +38,7 @@ protected:
 	void Die();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
-	float MaxHealth = 100.f;
+	float MaxHealth = 40.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
 	float CurrentHealth;

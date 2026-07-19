@@ -1,17 +1,42 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "ShopWidget.h"
 #include "../Props/Shop.h"
 #include "../Core/KangPlayerState.h"
 #include "../Component/InventoryComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
-
+#include "Components/VerticalBox.h"
+#include "../Core/KangPlayerController.h"
 
 void UShopWidget::InitShop(AShop* InShop)
 {
 	Shop = InShop;
+	if (!Shop || !ShopItemWidgetClass) return;
+
+	RifleList->ClearChildren();
+	PistolList->ClearChildren();
+	AllyList->ClearChildren();
+
+	for (int32 i = 0; i < Shop->ShopItems.Num(); i++)
+	{
+		UShopItemWidget* ItemWidget = CreateWidget<UShopItemWidget>(this, ShopItemWidgetClass);
+		if (!ItemWidget) continue;
+
+		ItemWidget->InitItem(Shop->ShopItems[i], i);
+		ItemWidget->OnBuyClicked.AddDynamic(this, &UShopWidget::BuyItem);
+
+		switch (Shop->ShopItems[i].ItemType)
+		{
+		case EShopItemType::Rifle:
+			RifleList->AddChild(ItemWidget);
+			break;
+		case EShopItemType::Pistol:
+			PistolList->AddChild(ItemWidget);
+			break;
+		case EShopItemType::Ally:
+			AllyList->AddChild(ItemWidget);
+			break;
+		}
+	}
 }
 
 TArray<FShopItemData> UShopWidget::GetShopItems() const
@@ -38,7 +63,7 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 		return;
 	}
 
-	if (Item.ItemType == EShopItemType::Weapon && Item.WeaponClass)
+	if ((Item.ItemType == EShopItemType::Rifle || Item.ItemType == EShopItemType::Pistol) && Item.WeaponClass)
 	{
 		ACharacter* Player = Cast<ACharacter>(PC->GetPawn());
 		if (!Player) return;
@@ -54,6 +79,16 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 			UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
 			if (Inventory) Inventory->PickupWeapon(Weapon);
 			UE_LOG(LogTemp, Warning, TEXT("Bought: %s"), *Item.ItemName.ToString());
+		}
+	}
+	else if (Item.ItemType == EShopItemType::Ally && Item.AllyClass )
+	{
+		AKangPlayerController* KPC = Cast<AKangPlayerController>(GetWorld()->GetFirstPlayerController());
+		if (KPC)
+		{
+			KPC->StartPlacementMode(Item.AllyClass);
+			// ªÛ¡° ¥›±‚
+			SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 }

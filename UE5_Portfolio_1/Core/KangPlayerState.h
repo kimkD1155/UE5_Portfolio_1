@@ -30,5 +30,5 @@ public:
 
 private:
 	UPROPERTY(VisibleAnywhere)
-	int32 Coin = 0;
+	int32 Coin = 10;
 };

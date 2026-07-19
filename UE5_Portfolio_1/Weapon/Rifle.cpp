@@ -9,6 +9,13 @@ ARifle::ARifle()
 {
     WeaponType = EWeaponType::Rifle;
 	WeaponName = FText::FromString(TEXT("Ak47"));
+
+    GunData.MagazineSize = 30;
+    GunData.MaxReserveAmmo = 90;
+    GunData.Damage = 25.f;
+    GunData.Range = 5000.f;
+    GunData.FireRate = 0.1f;
+    GunData.ReloadTime = 2.0f;
 }
 
 void ARifle::StartFire()

@@ -53,6 +53,7 @@ void AKangPlayerCharacter::BeginPlay()
 	if (AKangPlayerState* PS = GetPlayerState<AKangPlayerState>())
 	{
 		PS->OnCoinChanged.AddDynamic(HUDComponent, &UHUDComponent::UpdateCoinUI);
+		HUDComponent->UpdateCoinUI(PS->GetCoin()); // 초기값 갱신
 	}
 
 	if (UKangAnimInstance* AnimInst = Cast<UKangAnimInstance>(GetMesh()->GetAnimInstance()))

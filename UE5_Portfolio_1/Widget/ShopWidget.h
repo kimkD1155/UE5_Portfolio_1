@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "../Props/ShopItemData.h"
+#include "../Widget/ShopItemWidget.h"
 #include "ShopWidget.generated.h"
 
 class UVerticalBox;
@@ -15,7 +16,11 @@ class UE5_PORTFOLIO_1_API UShopWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
+
 public:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UShopItemWidget> ShopItemWidgetClass;
+
 	void InitShop(AShop* InShop);
 
 	UFUNCTION(BlueprintCallable)
@@ -25,9 +30,16 @@ public:
 	TArray<FShopItemData> GetShopItems() const;
 
 protected:
-	UPROPERTY(meta = (BindWidget))
-	UVerticalBox* ItemList;
 
 	UPROPERTY()
 	AShop* Shop;
+
+	UPROPERTY(meta = (BindWidget))
+	UVerticalBox* RifleList;
+
+	UPROPERTY(meta = (BindWidget))
+	UVerticalBox* PistolList;
+
+	UPROPERTY(meta = (BindWidget))
+	UVerticalBox* AllyList;
 };
