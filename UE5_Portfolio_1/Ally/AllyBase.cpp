@@ -6,7 +6,7 @@
 
 AAllyBase::AAllyBase()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
 
     Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
     RootComponent = Mesh;
@@ -24,6 +24,20 @@ AAllyBase::AAllyBase()
 void AAllyBase::BeginPlay()
 {
     Super::BeginPlay();
+}
+
+void AAllyBase::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    if (!IsValid(CurrentTarget)) return;
+
+    FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
+    Direction.Z = 0.f; // Z축 고정 (상하 회전 없이 좌우만)
+
+    FRotator TargetRotation = Direction.Rotation();
+    FRotator NewRotation = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, 5.f);
+    SetActorRotation(NewRotation);
 }
 
 void AAllyBase::SetTargetPriority(ETargetPriority NewPriority)
@@ -110,6 +124,9 @@ bool AAllyBase::HasLineOfSight(AActor* Target)
 {
     if (!IsValid(Target)) return false;
 
+    FVector Start = GetActorLocation() + FVector(0, 0, TraceHeightOffset);
+    FVector End = Target->GetActorLocation() + FVector(0, 0, TraceHeightOffset);
+
     FHitResult HitResult;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(this);
@@ -124,11 +141,13 @@ bool AAllyBase::HasLineOfSight(AActor* Target)
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         HitResult,
-        GetActorLocation(),
-        Target->GetActorLocation(),
+        Start,
+        End,
         ECC_Pawn,
         Params
     );
+
+
 
     return !bHit || HitResult.GetActor() == Target;
 }

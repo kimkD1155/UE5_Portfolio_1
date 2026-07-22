@@ -72,6 +72,8 @@ protected:
 	UInputAction* Num3Action;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* Num4Action;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* EscapeAction;
 
 protected:
 	void Move(const FInputActionValue& Value);
@@ -89,6 +91,10 @@ protected:
 	void EquipWeapon2(const FInputActionValue& Value);
 	void EquipWeapon3(const FInputActionValue& Value);
 	void EquipWeapon4(const FInputActionValue& Value);
+	void Escape(const FInputActionValue& Value);
+
+	virtual void Landed(const FHitResult& Hit) override;
+	virtual void OnJumped_Implementation() override;
 //天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天
 // 闡ん凱お
 protected:

@@ -42,9 +42,16 @@ public:
 	UPROPERTY()
 	UShopWidget* ShopWidget;
 
+	void CloseShop();
+	bool IsShopOpen() const { return bIsShopOpen; }
+
+private:
+	bool bIsShopOpen = false;
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
 
-	
+
+
 };

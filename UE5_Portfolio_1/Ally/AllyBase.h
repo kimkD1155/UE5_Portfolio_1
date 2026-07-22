@@ -29,6 +29,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+    virtual void Tick(float DeltaTime) override;
 
 public:
 
@@ -69,6 +70,9 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Ally")
     float AttackInterval = 1.0f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Ally")
+    float TraceHeightOffset = 50; // 트레이스 시작 높이 오프셋
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ally")
     ETargetPriority TargetPriority = ETargetPriority::Closest;

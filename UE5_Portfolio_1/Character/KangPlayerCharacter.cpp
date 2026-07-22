@@ -8,17 +8,18 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
-//天天天天天天 醴蝶籤 闡ん凱お 天天天天天天
+//天天天天天天 醴蝶籤 天天天天天天
 #include "../Weapon/WeaponBase.h"
 #include "../Weapon/RangedWeapon.h"
 #include "../Component/HUDComponent.h"
 #include "../Component/InteractionComponent.h"
 #include "../Component/InventoryComponent.h"
 #include "../Animation/KangAnimInstance.h"
-
-//天天天天天天 醴蝶籤 だ橾 天天天天天天
 #include "../Core/KangPlayerState.h"
+#include "../Core/KangPlayerController.h"
+#include "../Props/Shop.h"
 
 
 // Sets default values
@@ -108,6 +109,7 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EIC->BindAction(Num2Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon2);
 		EIC->BindAction(Num3Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon3);
 		EIC->BindAction(Num4Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon4);
+		EIC->BindAction(EscapeAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Escape);
 	}
 	else
 	{
@@ -149,6 +151,20 @@ void AKangPlayerCharacter::Look(const FInputActionValue& Value)
 
 }
 
+void AKangPlayerCharacter::OnJumped_Implementation()
+{
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+void AKangPlayerCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+	if (!bIsInCombatMode)
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+	}
+}
+
 void AKangPlayerCharacter::StartRunning(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
@@ -187,6 +203,14 @@ void AKangPlayerCharacter::Drop(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 {
+	AKangPlayerController* PC = Cast<AKangPlayerController>(GetController());
+	if (PC && PC->IsInPlacementMode())
+	{
+		PC->ConfirmPlacement(); // 寡纂 賅萄賊 撲纂
+		return;
+
+	}
+
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	if (!InventoryComponent->GetEquippedWeapon())
 	{
@@ -276,6 +300,31 @@ void AKangPlayerCharacter::EquipWeapon3(const FInputActionValue& Value)
 void AKangPlayerCharacter::EquipWeapon4(const FInputActionValue& Value)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 4 action triggered!"));
+}
+
+void AKangPlayerCharacter::Escape(const FInputActionValue& Value)
+{
+	AKangPlayerController* PC = Cast<AKangPlayerController>(GetController());
+	if (PC && PC->IsInPlacementMode())
+	{
+		PC->CancelPlacement();
+		return;
+	}
+
+	// 翮溥氈朝 鼻薄 瓊嬴憮 殘晦
+	TArray<AActor*> Shops;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AShop::StaticClass(), Shops);
+	for (AActor* Actor : Shops)
+	{
+		if (AShop* Shop = Cast<AShop>(Actor))
+		{
+			if (Shop->IsShopOpen())
+			{
+				Shop->CloseShop();
+				return;
+			}
+		}
+	}
 }
 
 

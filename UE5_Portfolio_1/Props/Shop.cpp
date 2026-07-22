@@ -44,6 +44,7 @@ void AShop::Interact_Implementation(ACharacter* Interactor)
 
 	bool bIsVisible = ShopWidget->GetVisibility() == ESlateVisibility::Visible;
 	ShopWidget->SetVisibility(bIsVisible ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
+	bIsShopOpen = !bIsVisible;
 
 	APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
 	if (!PC) return;
@@ -63,4 +64,18 @@ void AShop::Interact_Implementation(ACharacter* Interactor)
 FText AShop::GetInteractHintText_Implementation()
 {
 	return FText::FromString(TEXT("Open Shop [E]"));
+}
+
+void AShop::CloseShop()
+{
+	if (!ShopWidget || !bIsShopOpen) return;
+	ShopWidget->SetVisibility(ESlateVisibility::Hidden);
+	bIsShopOpen = false;
+
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC)
+	{
+		PC->SetShowMouseCursor(false);
+		PC->SetInputMode(FInputModeGameOnly());
+	}
 }

@@ -46,4 +46,12 @@ public:
 
 	bool IsInPlacementMode() const { return bIsInPlacementMode; }
 
+	UPROPERTY(EditDefaultsOnly, Category = "Placement")
+	UMaterialInterface* GhostMaterial;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* GhostMatInstance; // 코드에서 동적으로 색상을 변경하기위해 사용
+
+	bool IsValidPlacementLocation(const FVector& Location) const;
+
 };
