@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "../Core/EnemyAIController.h"
 #include "../Core/KangPlayerState.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 // Sets default values
 AEnemyCharacter::AEnemyCharacter()
@@ -72,4 +73,16 @@ void AEnemyCharacter::Die()
 	}
 	SetActorEnableCollision(false);
 	Destroy();
+}
+
+AActor* AEnemyCharacter::GetTargetLocation() const
+{
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+		{
+			return Cast<AActor>(BB->GetValueAsObject(TEXT("TargetLocation")));
+		}
+	}
+	return nullptr;
 }

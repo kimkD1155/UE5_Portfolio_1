@@ -29,13 +29,20 @@ public:
 	UFUNCTION(BlueprintPure)
 	float GetCurrentHealth() const { return CurrentHealth; }
 
+	UFUNCTION(BlueprintPure)
+	float GetAttackRange() const { return AttackRange; }
+
 protected:
 
 	UFUNCTION()
 	void TakeDamageHandler(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
 		class AController* InstigatedBy, AActor* DamageCauser);
 
+	virtual void Attack() {}
+
 	void Die();
+
+	AActor* GetTargetLocation() const;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	float MaxHealth = 40.f;
@@ -45,5 +52,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	int32 CoinReward = 10;
+
+	// 방어벽과의 Distance가 최소 188 정도 되므로, 자식 Enemy에서 그 이상으로 해야 됨
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	float AttackRange = 200.f;
 
 };

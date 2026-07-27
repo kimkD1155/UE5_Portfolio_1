@@ -10,6 +10,7 @@ AZombieRanged::AZombieRanged()
 {
 	MaxHealth = 30.f;
 	CoinReward = 20;
+	AttackRange = 1000.f;
 	GetCharacterMovement()->MaxWalkSpeed = 250.f;
 }
 

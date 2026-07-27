@@ -7,7 +7,19 @@
 #include "EnemySpawner.generated.h"
 
 class UBoxComponent;
-class AEnemyCharacter;
+class ACharacter;
+
+USTRUCT(BlueprintType)
+struct FEnemySpawnInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<ACharacter> EnemyClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SpawnWeight = 1.0f; // 가중치 (높을수록 더 자주 스폰)
+};
 
 UCLASS()
 class UE5_PORTFOLIO_1_API AEnemySpawner : public AActor
@@ -28,34 +40,31 @@ public:
 
 protected:
 
-	// 스폰할 적 클래스 (BP에서 지정)
-	UPROPERTY(EditAnywhere, Category = "Spawn")
-	TSubclassOf<AEnemyCharacter> EnemyClass;
+    void SpawnEnemy();
+    void UpdateDifficulty();
+    TSubclassOf<ACharacter> SelectEnemyClass(); // 가중치 기반 랜덤 선택
+    FVector GetRandomSpawnLocation(); // 박스 내 랜덤 위치
 
-	// 초기 스폰 간격 (초)
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float InitialSpawnInterval = 20.0f;
+    UPROPERTY(VisibleAnywhere, Category = "Spawn")
+    UBoxComponent* SpawnArea;
 
-	// 최소 스폰 간격 (초)
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float MinSpawnInterval = 1.0f;
+    UPROPERTY(EditAnywhere, Category = "Spawn")
+    TArray<FEnemySpawnInfo> EnemySpawnInfos;
 
-	// 스폰 간격 감소량 (난이도 업 시마다)
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float SpawnIntervalDecrement = 0.5f;
+    UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+    float InitialSpawnInterval = 5.0f;
 
-	// 난이도 업 주기 (초)
-	UPROPERTY(EditDefaultsOnly, Category = "Spawn")
-	float DifficultyUpInterval = 30.0f;
+    UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+    float MinSpawnInterval = 1.0f;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+    float SpawnIntervalDecrement = 0.5f;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Spawn")
+    float DifficultyUpInterval = 30.0f;
 
-	float CurrentSpawnInterval;
+    float CurrentSpawnInterval;
 
-	FTimerHandle SpawnTimerHandle;
-	FTimerHandle DifficultyTimerHandle;
-
-	void SpawnEnemy();
-	void UpdateDifficulty();
-
+    FTimerHandle SpawnTimerHandle;
+    FTimerHandle DifficultyTimerHandle;
 };

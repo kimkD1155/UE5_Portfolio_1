@@ -8,6 +8,7 @@ AZombieTanker::AZombieTanker()
 {
 	MaxHealth = 200.f;
 	CoinReward = 30;
+	AttackRange = 250.f;
 
 	// 느리고 크게
 	GetCharacterMovement()->MaxWalkSpeed = 200.f;

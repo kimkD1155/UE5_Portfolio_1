@@ -19,9 +19,6 @@ public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 protected:
-	// 공격 범위
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackRange = 150.f;
 
 	// 한 번 공격 시 데미지
 	UPROPERTY(EditAnywhere, Category = "Attack")

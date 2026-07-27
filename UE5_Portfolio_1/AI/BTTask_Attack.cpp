@@ -6,6 +6,9 @@
 #include "AIController.h"
 #include "../Props/Barricade.h"
 #include "Kismet/GameplayStatics.h"
+#include "../Character/EnemyCharacter.h"
+
+#include "DrawDebugHelpers.h"
 
 
 UBTTask_Attack::UBTTask_Attack()
@@ -25,14 +28,28 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor")));
 	if (!Target) return EBTNodeResult::Failed;
 
+	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(Pawn);
+	if (!Enemy) return EBTNodeResult::Failed;
+
 	// 거리 체크
 	// 수정 - 컴포넌트 바운드 기준 가장 가까운 점
-	FBox BoundingBox = Target->GetComponentsBoundingBox();
-	FVector ClosestPoint = BoundingBox.GetClosestPointTo(Pawn->GetActorLocation());
-	float Distance = FVector::Dist(Pawn->GetActorLocation(), ClosestPoint);
+	FVector TargetLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(TEXT("TargetLocation"));
+	float Distance = FVector::Dist(Pawn->GetActorLocation(), TargetLocation);
 
-	if (Distance > AttackRange)
+
+#if WITH_EDITOR
+// 적 → 타겟 가장 가까운 점 라인
+	DrawDebugLine(GetWorld(), Pawn->GetActorLocation(), TargetLocation, FColor::Yellow, false, 1.f, 0, 2.f);
+	// 타겟 가장 가까운 점 구체
+	DrawDebugSphere(GetWorld(), TargetLocation, 20.f, 12, FColor::Yellow, false, 1.f);
+	// AttackRange 구체
+	DrawDebugSphere(GetWorld(), Pawn->GetActorLocation(), Enemy->GetAttackRange(), 24,
+		Distance <= Enemy->GetAttackRange() ? FColor::Green : FColor::Red, false, 1.f);
+#endif
+
+	if (Distance > Enemy->GetAttackRange())
 	{
+		
 		return EBTNodeResult::Failed; // 범위 밖이면 다시 MoveTo로
 	}
 

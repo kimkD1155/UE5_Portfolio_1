@@ -16,4 +16,7 @@ class UE5_PORTFOLIO_1_API AZombieNormal : public AEnemyCharacter
 	
 public:
 	AZombieNormal();
+
+protected:
+	virtual void Attack() override;
 };
