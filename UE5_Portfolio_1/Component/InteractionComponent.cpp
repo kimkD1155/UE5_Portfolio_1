@@ -60,7 +60,7 @@ void UInteractionComponent::UpdateInteractionTarget()
 	// IInteractable 구현한 액터만 대상으로
 	if (HitActor && HitActor->Implements<UInteractableInterface>())
 	{
-		if (CurrentInteractTarget != HitActor)
+		if (CurrentInteractTarget != HitActor || CurrentInteractTarget == HitActor) // 현재 타겟이 같을 때도 업데이트
 		{
 			CurrentInteractTarget = HitActor;
 			// TODO: Step 4에서 HUD 힌트 텍스트 업데이트

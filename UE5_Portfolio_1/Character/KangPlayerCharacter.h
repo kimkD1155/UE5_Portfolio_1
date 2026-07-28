@@ -104,6 +104,15 @@ protected:
 	UInteractionComponent* InteractionComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInventoryComponent* InventoryComponent;
+
+public:
+	// 컴포넌트 접근자
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UHUDComponent* GetHUDComponent() const { return HUDComponent; }
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 변수
 	float WalkSpeed = 300.f;
@@ -156,6 +165,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
 	TObjectPtr<UAnimMontage> RifleReloadMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
+	TObjectPtr<UAnimMontage> RifleFireMontage;
 
 
 public:

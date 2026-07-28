@@ -220,6 +220,7 @@ void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 	}
 	EnterCombatMode();
 	InventoryComponent->GetEquippedWeapon()->StartFire();
+	PlayAnimMontage(RifleFireMontage);
 }
 
 void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)

@@ -77,7 +77,7 @@ void APistol::Fire()
 		HitResult,
 		ViewLocation,
 		TraceEnd,
-		ECC_Visibility,
+		ECC_Pawn,
 		QueryParams
 	);
 
@@ -98,5 +98,4 @@ void APistol::Fire()
 	DrawDebugLine(GetWorld(), ViewLocation, bHit ? HitResult.ImpactPoint : TraceEnd, FColor::Red, false, 1.f);
 #endif
 
-	UE_LOG(LogTemp, Warning, TEXT("Pistol Fire: Ammo %d / %d"), CurrentAmmo, GunData.MagazineSize);
 }

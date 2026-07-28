@@ -63,6 +63,10 @@ void AShop::Interact_Implementation(ACharacter* Interactor)
 
 FText AShop::GetInteractHintText_Implementation()
 {
+	if (bIsShopOpen)
+	{
+		return FText::FromString(TEXT("Close Shop [E]"));
+	}
 	return FText::FromString(TEXT("Open Shop [E]"));
 }
 
