@@ -26,7 +26,7 @@ void AAlly_Gunner::Attack()
         HitResult,
         StartLocation,
         EndLocation,
-        ECC_Visibility,
+        ECC_Pawn,
         Params
     );
 

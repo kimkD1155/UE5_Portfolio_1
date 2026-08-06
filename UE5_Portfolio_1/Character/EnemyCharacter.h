@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "EnemyCharacter.generated.h"
 
+class USphereComponent;
+
 UCLASS()
 class UE5_PORTFOLIO_1_API AEnemyCharacter : public ACharacter
 {

@@ -6,7 +6,17 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
+
+
 class AWeaponBase;
+
+UENUM(BlueprintType)
+enum class EWeaponSlot : uint8
+{
+	Primary,
+	Secondary,
+	Throwable
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE5_PORTFOLIO_1_API UInventoryComponent : public UActorComponent
@@ -30,8 +40,12 @@ public:
 
 	void PickupWeapon(AWeaponBase* Weapon);
 	void DropWeapon();
+	void EquipSlot(EWeaponSlot Slot);
 
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
+
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	EWeaponSlot GetCurrentSlot() const { return CurrentSlot; }
 
 protected:
 
@@ -40,5 +54,13 @@ protected:
 
 	UPROPERTY()
 	AWeaponBase* EquippedWeapon;
+
+	UPROPERTY()
+	TMap<EWeaponSlot, AWeaponBase*> WeaponSlots;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+	TSubclassOf<AWeaponBase> DefaultWeaponClass;
+
+	EWeaponSlot CurrentSlot = EWeaponSlot::Primary;
 
 };

@@ -15,6 +15,7 @@ UBTTask_FindTarget::UBTTask_FindTarget()
 
 EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+
 	AAIController* AIC = OwnerComp.GetAIOwner();
 	if (!AIC || !AIC->GetPawn()) return EBTNodeResult::Failed;
 

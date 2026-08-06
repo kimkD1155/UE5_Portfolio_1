@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "../Component/InventoryComponent.h"
 #include "../Character/KangPlayerCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 
 // Sets default values
@@ -89,4 +90,12 @@ FText AWeaponBase::GetInteractHintText_Implementation()
 {
     //return FText::FromString(TEXT("E 줍기")); 이거 왜 안 됨
 	return FText::FromString(TEXT("E - Pick Up"));
+}
+
+void AWeaponBase::PlayFireSound()
+{
+    if (FireSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+    }
 }

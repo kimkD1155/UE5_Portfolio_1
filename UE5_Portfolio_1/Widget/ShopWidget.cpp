@@ -89,6 +89,7 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 			KPC->StartPlacementMode(Item.AllyClass);
 			// »óÁ¡ ´Ý±â
 			SetVisibility(ESlateVisibility::Hidden);
+			Shop->SetShopOpen(false);
 		}
 	}
 }

@@ -176,4 +176,6 @@ public:
 	UFUNCTION()
 	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	UFUNCTION(BlueprintPure)
+	bool GetbIsAiming() const { return bIsAiming; }
 };

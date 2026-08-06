@@ -70,6 +70,7 @@ void ARifle::FireOnce()
     if (FireSound)
         UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());*/
 
+	PlayFireSound();
     // 式式 �鷝捐瘧� 式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式
     if (!OwnerCharacter) return;
 

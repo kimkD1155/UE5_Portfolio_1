@@ -9,6 +9,8 @@
 // OwnerCharacter->GetController() 같은 멤버함수를 호출하려면 반드시 완전한 타입 정의가 필요
 #include "WeaponBase.generated.h"
 
+class USoundBase;
+
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
@@ -79,4 +81,11 @@ public:
 	virtual void StopFire() {}
 	virtual void StartAim() {}
 	virtual void StopAim() {}
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundBase* FireSound;
+
+	void PlayFireSound();
+
+
 };

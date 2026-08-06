@@ -42,6 +42,13 @@ void AKangPlayerController::StartPlacementMode(TSubclassOf<AAllyBase> AllyClass)
 {
 	if (!AllyClass) return;
 
+	// 기존 고스트 프리뷰가 있으면 제거
+	if (GhostPreview)
+	{
+		GhostPreview->Destroy();
+		GhostPreview = nullptr;
+	}
+
 	PendingAllyClass = AllyClass;
 	bIsInPlacementMode = true;
 

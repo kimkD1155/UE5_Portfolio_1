@@ -44,6 +44,7 @@ public:
 
 	void CloseShop();
 	bool IsShopOpen() const { return bIsShopOpen; }
+	void SetShopOpen(bool bOpen) { bIsShopOpen = bOpen; }
 
 private:
 	bool bIsShopOpen = false;

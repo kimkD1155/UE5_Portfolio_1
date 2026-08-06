@@ -7,6 +7,7 @@
 #include "../Core/EnemyAIController.h"
 #include "../Core/KangPlayerState.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SphereComponent.h"
 
 // Sets default values
 AEnemyCharacter::AEnemyCharacter()

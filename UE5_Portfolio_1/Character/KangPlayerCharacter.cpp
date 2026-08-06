@@ -83,6 +83,7 @@ void AKangPlayerCharacter::Tick(float DeltaTime)
 			FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, AimInterpSpeed)
 		);
 	}
+
 }
 
 // Called to bind functionality to input
@@ -285,17 +286,17 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::EquipWeapon1(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 1 action triggered!"));
+	InventoryComponent->EquipSlot(EWeaponSlot::Primary);
 }
 
 void AKangPlayerCharacter::EquipWeapon2(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 2 action triggered!"));
+	InventoryComponent->EquipSlot(EWeaponSlot::Secondary);
 }
 
 void AKangPlayerCharacter::EquipWeapon3(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 3 action triggered!"));
+	InventoryComponent->EquipSlot(EWeaponSlot::Throwable);
 }
 
 void AKangPlayerCharacter::EquipWeapon4(const FInputActionValue& Value)
