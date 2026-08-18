@@ -17,11 +17,13 @@ class UE5_PORTFOLIO_1_API ARifle : public ARangedWeapon
 
 public:
     ARifle();
+    virtual void Tick(float DeltaTime) override;
 
     virtual void StartFire() override;
     virtual void StopFire() override;
 
 protected:
+    virtual void BeginPlay() override;
     // 자동/반자동
     UPROPERTY(EditDefaultsOnly, Category = "Rifle")
     bool bIsAutomatic = true;

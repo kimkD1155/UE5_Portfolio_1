@@ -4,6 +4,7 @@
 #include "InventoryComponent.h"
 #include "GameFramework/Character.h"
 #include "../Weapon/WeaponBase.h"
+#include "../Character/KangPlayerCharacter.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
@@ -21,7 +22,12 @@ void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwnerCharacter = Cast<ACharacter>(GetOwner());
+	OwnerCharacter = Cast<AKangPlayerCharacter>(GetOwner());
+	if (!OwnerCharacter)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InventoryComponent is not attached to a KangPlayerCharacter!"));
+		return;
+	}
 	// ...
 	// 기본 보조무기(권총) 지급
 	if (DefaultWeaponClass && OwnerCharacter)
@@ -47,7 +53,13 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 void UInventoryComponent::PickupWeapon(AWeaponBase* Weapon)
 {
-	if (!Weapon) return;
+	if (!Weapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PickupWeapon called with null Weapon"));
+		return;
+	}
+
+	Weapon->SetOwner(OwnerCharacter);
 
 	const EWeaponSlot Slot = (Weapon->GetWeaponType() == EWeaponType::Pistol) ? EWeaponSlot::Secondary :
 		(Weapon->GetWeaponType() == EWeaponType::Rifle) ? EWeaponSlot::Primary : EWeaponSlot::Throwable;
@@ -65,13 +77,9 @@ void UInventoryComponent::PickupWeapon(AWeaponBase* Weapon)
 
 	WeaponSlots.Add(Slot, Weapon);
 
-	// 픽업한 무기가 현재 슬롯이면 바로 장착
-	if (Slot == CurrentSlot)
-	{
-		EquipSlot(Slot);
-	}
+	EquipSlot(Slot);
 
-	UE_LOG(LogTemp, Log, TEXT("Picked up weapon: %s (Slot: %d)"), *Weapon->GetName(), (int32)Slot);
+	UE_LOG(LogTemp, Warning, TEXT("Picked up weapon: %s (Slot: %d)"), *Weapon->GetName(), (int32)Slot);
 }
 
 void UInventoryComponent::DropWeapon()
@@ -95,13 +103,48 @@ void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 		return;
 	}
 
+	
+
 	if (EquippedWeapon)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Unequipping weapon: %s (Slot: %d)"), *EquippedWeapon->GetName(), (int32)CurrentSlot);
-		EquippedWeapon->Unequip();
+		UE_LOG(LogTemp, Log, TEXT("Holstering weapon: %s (Slot: %d)"), *EquippedWeapon->GetName(), (int32)CurrentSlot);
+
+		FName* HolsterSocket = HolsterSocketMap.Find(CurrentSlot);
+		if (HolsterSocket)
+		{
+			EquippedWeapon->AttachToComponent(OwnerCharacter->GetMesh(),
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				*HolsterSocket);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No holster socket mapped for slot: %d"), (int32)CurrentSlot);
+		}
 	}
-	UE_LOG(LogTemp, Log, TEXT("Equipping weapon: %s (Slot: %d)"), *(*FoundPtr)->GetName(), (int32)Slot);
+
+
 	EquippedWeapon = *FoundPtr;
-	EquippedWeapon->Equip(OwnerCharacter);
+
+	switch (Slot)
+	{
+		case EWeaponSlot::Primary:
+			OwnerCharacter->PlayAnimMontage(OwnerCharacter->RifleEquipMontage);
+			break;
+		case EWeaponSlot::Secondary:
+			OwnerCharacter->PlayAnimMontage(OwnerCharacter->PistolEquipMontage);
+			break;
+		case EWeaponSlot::Throwable:
+			break;
+		default:
+			break;
+	}
+
+	
+
+	EquippedWeapon->AttachToComponent(OwnerCharacter->GetMesh(),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		EquippedWeapon->GripSocketName);
+
 	CurrentSlot = Slot;
+	UE_LOG(LogTemp, Log, TEXT("Equipped weapon: %s (Slot: %d)"), *EquippedWeapon->GetName(), (int32)CurrentSlot);
 }

@@ -81,6 +81,9 @@ void APistol::Fire()
 		QueryParams
 	);
 
+	PlayFireSound();
+	PlayFireMontage();
+
 	if (bHit && HitResult.GetActor())
 	{
 		UGameplayStatics::ApplyPointDamage(

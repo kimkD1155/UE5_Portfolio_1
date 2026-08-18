@@ -47,6 +47,7 @@ class UE5_PORTFOLIO_1_API ARangedWeapon : public AWeaponBase
 
 public:
     ARangedWeapon();
+    virtual void Tick(float DeltaTime) override;
 
     virtual void StartFire() override;
     virtual void StopFire() override;
@@ -71,6 +72,7 @@ public:
     UFUNCTION(BlueprintPure)
     int32 GetReserveAmmo() const { return ReserveAmmo; }
 
+
 protected:
     virtual void BeginPlay() override;
 
@@ -92,6 +94,27 @@ protected:
     FTimerHandle ReloadTimerHandle;
 
     
+protected:
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float RecoilPitchKick = 0.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float RecoilYawKickMin = -1.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float RecoilYawKickMax = 1.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float RecoilRecoverySpeed = 2.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Recoil")
+    float MaxRecoilPitchOffset = 10.0f;
+
+    float CurrentRecoilPitchOffset = 0.0f;
+    float CurrentRecoilYawOffset = 0.0f;
+
+    void ApplyRecoilKick();
+    void TickRecoilRecovery(float DeltaTime);
 
 public:
     void ReloadFinished();

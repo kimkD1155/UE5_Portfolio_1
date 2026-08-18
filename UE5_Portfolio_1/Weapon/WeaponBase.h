@@ -9,6 +9,7 @@
 // OwnerCharacter->GetController() 같은 멤버함수를 호출하려면 반드시 완전한 타입 정의가 필요
 #include "WeaponBase.generated.h"
 
+class USkeletalMeshComponent;
 class USoundBase;
 
 UENUM(BlueprintType)
@@ -47,14 +48,12 @@ protected:
 
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UStaticMeshComponent* WeaponMesh;
+	USkeletalMeshComponent* WeaponMesh;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	EWeaponType WeaponType = EWeaponType::None;
 
-	// 캐릭터 손 소켓 이름
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
-	FName AttachSocketName = TEXT("hand_r_Socket");
+
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
@@ -64,6 +63,12 @@ public:
 	// ── 장착 / 해제 ───────────────────────────────
 	void Equip(ACharacter* NewOwner);
 	void Unequip();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FTransform GripOffset;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FName GripSocketName = "Hand_r_socket";
 
 	// ── 자식 클래스에서 override ───────────────────
 	// IInteractableInterface
@@ -85,7 +90,16 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	USoundBase* FireSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	UAnimMontage* ReloadMontage;
+
 	void PlayFireSound();
+	void PlayFireMontage();
+	void PlayReloadMontage();
+
 
 
 };

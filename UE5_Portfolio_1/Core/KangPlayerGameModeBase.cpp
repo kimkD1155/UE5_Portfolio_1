@@ -8,7 +8,7 @@
 AKangPlayerGameModeBase::AKangPlayerGameModeBase()
 {
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Character/Blueprint/BP_Player"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Character/Blueprint/BP_KangPlayer"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 	PlayerStateClass = AKangPlayerState::StaticClass();
 }

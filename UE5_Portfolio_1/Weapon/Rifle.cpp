@@ -4,9 +4,13 @@
 #include "Rifle.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/Controller.h"
 
 ARifle::ARifle()
 {
+    PrimaryActorTick.bCanEverTick = true;
+
     WeaponType = EWeaponType::Rifle;
 	WeaponName = FText::FromString(TEXT("Ak47"));
 
@@ -16,6 +20,17 @@ ARifle::ARifle()
     GunData.Range = 5000.f;
     GunData.FireRate = 0.1f;
     GunData.ReloadTime = 2.0f;
+}
+
+void ARifle::BeginPlay()
+{
+    Super::BeginPlay();
+}
+
+void ARifle::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+    TickRecoilRecovery(DeltaTime);
 }
 
 void ARifle::StartFire()
@@ -70,12 +85,21 @@ void ARifle::FireOnce()
     if (FireSound)
         UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());*/
 
-	PlayFireSound();
+	
     // ── 히트스캔 ──────────────────────────────────
-    if (!OwnerCharacter) return;
 
-    AController* Controller = OwnerCharacter->GetController();
-    if (!Controller) return;
+
+    ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+    if (!OwnerChar)
+    {
+        return;
+    }
+
+    AController* Controller = OwnerChar->GetController();
+    if (!Controller)
+    {
+        return;
+    }
 
     FVector CameraLocation;
     FRotator CameraRotation;
@@ -87,11 +111,16 @@ void ARifle::FireOnce()
     FHitResult HitResult;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(this);
-    Params.AddIgnoredActor(OwnerCharacter);
+    Params.AddIgnoredActor(OwnerChar);
 
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         HitResult, TraceStart, TraceEnd, ECC_Pawn, Params
     );
+    ApplyRecoilKick();
+
+    PlayFireSound();
+    UE_LOG(LogTemp, Warning, TEXT("Rifle Fire Montage"))
+    PlayFireMontage();
 
     // ── 데미지 ────────────────────────────────────
     if (bHit && HitResult.GetActor())
@@ -108,9 +137,9 @@ void ARifle::FireOnce()
     }
 
     // ── 디버그 ────────────────────────────────────
-#if WITH_EDITOR
-    DrawDebugLine(GetWorld(), TraceStart,
-        bHit ? HitResult.ImpactPoint : TraceEnd,
-        FColor::Red, false, 0.1f, 0, 1.f);
-#endif
+//#if WITH_EDITOR
+//    DrawDebugLine(GetWorld(), TraceStart,
+//        bHit ? HitResult.ImpactPoint : TraceEnd,
+//        FColor::Red, false, 0.1f, 0, 1.f);
+//#endif
 }

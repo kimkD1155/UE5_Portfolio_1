@@ -26,4 +26,5 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Pistol")
 	float TraceRange = 5000.f;
 
+
 };

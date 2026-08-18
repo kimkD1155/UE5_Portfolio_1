@@ -1,8 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "WeaponBase.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "../Component/InventoryComponent.h"
 #include "../Character/KangPlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
@@ -14,12 +14,12 @@ AWeaponBase::AWeaponBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	// ¹«±â ¸Þ½Ã¸¦ ·çÆ®·Î
-	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
+	// ë¬´ê¸° ë©”ì‹œë¥¼ ë£¨íŠ¸ë¡œ
+	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	SetRootComponent(WeaponMesh);
     WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     WeaponMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-    WeaponMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block); // ¶óÀÎÆ®·¹ÀÌ½º Ã¤³Î¸¸ Çã¿ë
+    WeaponMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block); // ë¼ì¸íŠ¸ë ˆì´ìŠ¤ ì±„ë„ë§Œ í—ˆìš©
 
 
 }
@@ -28,7 +28,6 @@ AWeaponBase::AWeaponBase()
 void AWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -38,14 +37,14 @@ void AWeaponBase::Tick(float DeltaTime)
 
 }
 
-// ¦¡¦¡ ÀåÂø ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+// â”€â”€ ìž¥ì°© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 void AWeaponBase::Equip(ACharacter* NewOwner)
 {
 	UE_LOG(LogTemp, Log, TEXT("Equipping weapon"));
     OwnerCharacter = NewOwner;
     SetOwner(NewOwner);
 
-    //// ¾î¶² ¸Þ½Ã¿¡ ºÙÀ¸·Á´ÂÁö È®ÀÎ
+    //// ì–´ë–¤ ë©”ì‹œì— ë¶™ìœ¼ë ¤ëŠ”ì§€ í™•ì¸
     //USkeletalMeshComponent* CharMesh = NewOwner->GetMesh();
     //UE_LOG(LogTemp, Warning, TEXT("Mesh: %s"), *CharMesh->GetName());
     //UE_LOG(LogTemp, Warning, TEXT("SkeletalMesh Asset: %s"),
@@ -53,7 +52,7 @@ void AWeaponBase::Equip(ACharacter* NewOwner)
     //    ? *CharMesh->GetSkeletalMeshAsset()->GetName()
     //    : TEXT("NULL"));
 
-    //// ¼ÒÄÏ Á¸Àç ¿©ºÎ È®ÀÎ
+    //// ì†Œì¼“ ì¡´ìž¬ ì—¬ë¶€ í™•ì¸
     //bool bSocketExists = NewOwner->GetMesh()->DoesSocketExist(AttachSocketName);
     //UE_LOG(LogTemp, Warning, TEXT("Socket [%s] exists: %s"),
     //    *AttachSocketName.ToString(),
@@ -62,10 +61,14 @@ void AWeaponBase::Equip(ACharacter* NewOwner)
     AttachToComponent(
         NewOwner->GetMesh(),
         FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-        AttachSocketName
+        GripSocketName
     );
+
+    // Attach í›„ ì†Œì¼“ ê¸°ì¤€ ë³´ì •ê°’ ì ìš©
+    SetActorRelativeTransform(GripOffset);
+
     UE_LOG(LogTemp, Warning, TEXT("Attached to socket: %s, Location: %s"),
-        *AttachSocketName.ToString(),
+        *GripSocketName.ToString(),
         *GetActorLocation().ToString());
 }
 
@@ -88,14 +91,41 @@ void AWeaponBase::Interact_Implementation(ACharacter* Interactor)
 
 FText AWeaponBase::GetInteractHintText_Implementation()
 {
-    //return FText::FromString(TEXT("E ÁÝ±â")); ÀÌ°Å ¿Ö ¾È µÊ
+    //return FText::FromString(TEXT("E ì¤ê¸°")); ì´ê±° ì™œ ì•ˆ ë¨
 	return FText::FromString(TEXT("E - Pick Up"));
 }
 
 void AWeaponBase::PlayFireSound()
 {
-    if (FireSound)
+    if (FireSound && WeaponMesh)
     {
-        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+        const FVector MuzzleLocation =
+            WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+
+        UGameplayStatics::PlaySoundAtLocation(
+            this,
+            FireSound,
+            MuzzleLocation
+        );
+    }
+}
+
+void AWeaponBase::PlayFireMontage()
+{
+    UAnimInstance* AnimInstance = WeaponMesh->GetAnimInstance();
+
+    if (AnimInstance && FireMontage)
+    {
+        AnimInstance->Montage_Play(FireMontage);
+    }
+}
+
+void AWeaponBase::PlayReloadMontage()
+{
+    UAnimInstance* AnimInstance = WeaponMesh->GetAnimInstance();
+
+    if (AnimInstance && ReloadMontage)
+    {
+        AnimInstance->Montage_Play(ReloadMontage);
     }
 }

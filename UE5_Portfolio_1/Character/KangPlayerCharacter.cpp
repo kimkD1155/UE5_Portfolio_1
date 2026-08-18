@@ -97,8 +97,6 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKangPlayerCharacter::Look);
 		EIC->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-		EIC->BindAction(RunAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::StartRunning);
-		EIC->BindAction(RunAction, ETriggerEvent::Completed, this, &AKangPlayerCharacter::StopRunning);
 		EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Interact);
 		EIC->BindAction(DropAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Drop);
 		EIC->BindAction(FireAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::StartFire);
@@ -166,17 +164,6 @@ void AKangPlayerCharacter::Landed(const FHitResult& Hit)
 	}
 }
 
-void AKangPlayerCharacter::StartRunning(const FInputActionValue& Value)
-{
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-	ExitCombatMode();
-}
-
-void AKangPlayerCharacter::StopRunning(const FInputActionValue& Value)
-{
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-}
-
 void AKangPlayerCharacter::Interact(const FInputActionValue& Value)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interact action triggered!"));
@@ -212,16 +199,43 @@ void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-	if (!InventoryComponent->GetEquippedWeapon())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
 
+	if (!RangedWeapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped1"));
 		return;
 	}
+
+	bIsFiring = true;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
 	EnterCombatMode();
-	InventoryComponent->GetEquippedWeapon()->StartFire();
-	PlayAnimMontage(RifleFireMontage);
+
+	if (RangedWeapon->GetGunState() == EGunState::Reloading)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Reloading..."));
+		return;
+	}
+
+	RangedWeapon->StartFire();
+
+	
+
+	switch (RangedWeapon->GetWeaponType())
+	{
+		case EWeaponType::Pistol:
+			PlayAnimMontage(PistolFireMontage);
+			break;
+		case EWeaponType::Rifle:
+			PlayAnimMontage(RifleFireMontage);
+			break;
+		default:
+			UE_LOG(LogTemp, Warning, TEXT("Fire not implemented for this weapon type."));
+			return;
+
+	}
+	
 }
 
 void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)
@@ -230,6 +244,7 @@ void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)
 	
 	
 	InventoryComponent->GetEquippedWeapon()->StopFire();
+	bIsFiring = false;
 }
 
 void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
@@ -255,18 +270,11 @@ void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 {
-
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
 
 	if (!RangedWeapon)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped1"));
-		return;
-	}
-
-	if (!RifleReloadMontage)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped2"));
 		return;
 	}
 
@@ -276,10 +284,28 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 		return;
 	}
 
-	ReloadingWeapon = RangedWeapon;
-	RangedWeapon->Reload();
-	PlayAnimMontage(RifleReloadMontage);
+	// 몽타주 있는지 확인
+	if (!PistolReloadMontage || !RifleReloadMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Reload montages not set."));
+		return;
+	}
 
+	RangedWeapon->Reload();
+	ReloadingWeapon = RangedWeapon;
+	switch (RangedWeapon->GetWeaponType())
+	{
+		case EWeaponType::Pistol:
+			PlayAnimMontage(PistolReloadMontage);
+			break;
+		case EWeaponType::Rifle:
+			PlayAnimMontage(RifleReloadMontage);
+			break;
+		default:
+			UE_LOG(LogTemp, Warning, TEXT("Reload not implemented for this weapon type."));
+			return;
+	}
+	
 }
 
 
@@ -365,17 +391,19 @@ void AKangPlayerCharacter::EnterCombatMode()
 void AKangPlayerCharacter::ExitCombatMode()
 {
 	bIsInCombatMode = false;
-	bUseControllerRotationYaw = false; // 무기 발사 종료 시 캐릭터 회전 비활성화
-	GetCharacterMovement()->bOrientRotationToMovement = true; // 무기 발사 종료 시 캐릭터 이동 방향 회전 활성화
+	//bUseControllerRotationYaw = false; // 무기 발사 종료 시 캐릭터 회전 비활성화
+	//GetCharacterMovement()->bOrientRotationToMovement = true; // 무기 발사 종료 시 캐릭터 이동 방향 회전 활성화
 }
 
 void AKangPlayerCharacter::OnReloadNotify()
 {
+	
 	if (ReloadingWeapon)
 	{
 		ReloadingWeapon->ReloadFinished();
-		
+		UE_LOG(LogTemp, Warning, TEXT("Reload finished for weapon: %s"), *ReloadingWeapon->GetName());
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Reload notify received"));
 	
 }
 

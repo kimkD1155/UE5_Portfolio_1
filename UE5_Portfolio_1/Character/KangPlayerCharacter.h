@@ -52,8 +52,6 @@ protected:
 	UInputAction* LookAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* JumpAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "input")
-	UInputAction* RunAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* InteractAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -78,8 +76,6 @@ protected:
 protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
-	void StartRunning(const FInputActionValue& Value);
-	void StopRunning(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
 	void Drop(const FInputActionValue& Value);
 	void StartFire(const FInputActionValue& Value);
@@ -116,7 +112,6 @@ public:
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 변수
 	float WalkSpeed = 300.f;
-	float RunSpeed = 600.f;
 
 
 	
@@ -135,6 +130,8 @@ protected:
 	bool bIsInCombatMode = false;
 
 	FTimerHandle CombatModeTimerHandle;
+
+
 
 	void EnterCombatMode();
 	void ExitCombatMode();
@@ -159,16 +156,37 @@ protected:
 	bool bIsAiming = false;
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 몽타주 및 애니메이션 관련
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> PistolReloadMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> PistolFireMontage;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> PistolEquipMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> RifleReloadMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> RifleFireMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> RifleEquipMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> ShotgunReloadMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> ShotgunFireMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> ShotgunEquipMontage;
+
+//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+public:
+	bool bIsFiring = false;
 
 public:
 	UFUNCTION()
@@ -178,4 +196,7 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	bool GetbIsAiming() const { return bIsAiming; }
+
+	UFUNCTION(BlueprintPure)
+	bool GetbIsInCombatMode() const { return bIsInCombatMode; }
 };

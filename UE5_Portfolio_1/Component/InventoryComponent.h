@@ -9,6 +9,7 @@
 
 
 class AWeaponBase;
+class AKangPlayerCharacter;
 
 UENUM(BlueprintType)
 enum class EWeaponSlot : uint8
@@ -41,6 +42,16 @@ public:
 	void PickupWeapon(AWeaponBase* Weapon);
 	void DropWeapon();
 	void EquipSlot(EWeaponSlot Slot);
+	bool GetIsEquipping() const { return bIsEquipping; }
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FName HolsterPrimaryName = "Primary_Holster";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FName HolsterSecondaryName = "Secondary_Holster";
+
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+	TMap<EWeaponSlot, FName> HolsterSocketMap;
 
 	AWeaponBase* GetEquippedWeapon() const { return EquippedWeapon; }
 
@@ -50,7 +61,9 @@ public:
 protected:
 
 	UPROPERTY()
-	ACharacter* OwnerCharacter;
+	AKangPlayerCharacter* OwnerCharacter;
+
+	bool bIsEquipping = false;
 
 	UPROPERTY()
 	AWeaponBase* EquippedWeapon;
