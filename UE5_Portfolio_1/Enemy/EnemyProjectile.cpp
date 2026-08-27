@@ -16,7 +16,7 @@ AEnemyProjectile::AEnemyProjectile()
 	CollisionComp->SetSphereRadius(10.f);
 	CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComp->SetCollisionResponseToAllChannels(ECR_Block);
-	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	CollisionComp->OnComponentHit.AddDynamic(this, &AEnemyProjectile::OnHit);
 	RootComponent = CollisionComp;
 
@@ -26,6 +26,10 @@ AEnemyProjectile::AEnemyProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->ProjectileGravityScale = 0.f; // 중력 없음
 
+	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
+	ProjectileMesh->SetupAttachment(RootComponent);
+	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 충돌은 CollisionComp가 담당
+
 	SetLifeSpan(LifeSpan);
 }
 
@@ -34,6 +38,12 @@ void AEnemyProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+void AEnemyProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Projectile EndPlay: Reason = %d"), (int32)EndPlayReason);
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -57,6 +67,9 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 		this,
 		nullptr
 	);
+
+	UE_LOG(LogTemp, Warning, TEXT("OnHit: OtherActor = %s"), OtherActor ? *OtherActor->GetName() : TEXT("null"));
+	
 
 	Destroy();
 }

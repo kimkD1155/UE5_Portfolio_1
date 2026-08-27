@@ -43,13 +43,18 @@ AKangPlayerCharacter::AKangPlayerCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 	FollowCamera->FieldOfView = DefaultFOV;
+
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f);
 }
 
 // Called when the game starts or when spawned
 void AKangPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	// 코인 델리게이트 바인딩
 	if (AKangPlayerState* PS = GetPlayerState<AKangPlayerState>())
 	{
@@ -60,7 +65,6 @@ void AKangPlayerCharacter::BeginPlay()
 	if (UKangAnimInstance* AnimInst = Cast<UKangAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
 		AnimInst->OnReloadFinishedDelegate.AddDynamic(this, &AKangPlayerCharacter::OnReloadNotify);
-		AnimInst->OnMontageEnded.AddDynamic(this, &AKangPlayerCharacter::OnReloadMontageEnded);
 	}
 }
 
@@ -68,7 +72,8 @@ void AKangPlayerCharacter::BeginPlay()
 void AKangPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	UpdateMovementState();
+	UpdateLeftHandIK();
 	if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon()))
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Test"))
@@ -83,7 +88,7 @@ void AKangPlayerCharacter::Tick(float DeltaTime)
 			FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, AimInterpSpeed)
 		);
 	}
-
+	
 }
 
 // Called to bind functionality to input
@@ -116,24 +121,73 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 }
 
+void AKangPlayerCharacter::UpdateMovementState()
+{
+	float Speed = GetVelocity().Size();
+	AimYaw = FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, GetControlRotation().Yaw);
+
+	if (Speed > 10.f)
+	{
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	}
+	else
+	{
+		if (AimYaw >= 90.f)
+		{
+			Turn = true;
+			TurnDirection = ETurnDirection::Right;
+		}
+		else if (AimYaw <= -90.f)
+		{
+			Turn = true;
+			TurnDirection = ETurnDirection::Left;
+		}
+		else
+		{
+			Turn = false;
+			TurnDirection = ETurnDirection::None;
+		}
+		
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	}
+
+	
+}
+
+void AKangPlayerCharacter::UpdateLeftHandIK()
+{
+	ARangedWeapon* EquippedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
+	if (bIsEquipping || !EquippedWeapon || !EquippedWeapon->GetWeaponMesh())
+	{
+		bShouldUseLeftHandIK = false;
+		return;
+	}
+
+	if (EquippedWeapon->GetWeaponMesh()->DoesSocketExist(TEXT("LeftHandGrip")))
+	{
+		LeftHandIKTarget = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(TEXT("LeftHandGrip"), RTS_World);
+		bShouldUseLeftHandIK = true;
+	}
+	else
+	{
+		bShouldUseLeftHandIK = false;
+	}
+}
+
 void AKangPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
-	{
-		//// add movement 
-		//AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		//AddMovementInput(GetActorRightVector(), MovementVector.X);
+	const FRotator ControlRotation = GetControlRotation();
+	const FRotator YawRotation(0, ControlRotation.Yaw, 0); // Pitch/Roll 제거, Yaw만 사용
 
-		const FRotator YawRotation(0, Controller->GetControlRotation().Yaw, 0);
-		const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-		AddMovementInput(Forward, MovementVector.Y);
-		AddMovementInput(Right, MovementVector.X);
-	}
+	AddMovementInput(Forward, MovementVector.Y);
+	AddMovementInput(Right, MovementVector.X);
+	
 }
 
 void AKangPlayerCharacter::Look(const FInputActionValue& Value)
@@ -158,10 +212,6 @@ void AKangPlayerCharacter::OnJumped_Implementation()
 void AKangPlayerCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
-	if (!bIsInCombatMode)
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-	}
 }
 
 void AKangPlayerCharacter::Interact(const FInputActionValue& Value)
@@ -186,7 +236,7 @@ void AKangPlayerCharacter::Drop(const FInputActionValue& Value)
 	UE_LOG(LogTemp, Warning, TEXT("Drop action triggered!"));
 	
 	InventoryComponent->DropWeapon();
-	ExitCombatMode();
+	
 }
 
 void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
@@ -206,11 +256,16 @@ void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped1"));
 		return;
 	}
+	if (bIsEquipping == true)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot fire while equipping a weapon."));
+		return;
+	}
 
 	bIsFiring = true;
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	
 
-	EnterCombatMode();
+	
 
 	if (RangedWeapon->GetGunState() == EGunState::Reloading)
 	{
@@ -256,7 +311,7 @@ void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
 		return;
 	}
 	bIsAiming = true;
-	EnterCombatMode();
+	
 	InventoryComponent->GetEquippedWeapon()->StartAim();
 }
 
@@ -293,13 +348,14 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 
 	RangedWeapon->Reload();
 	ReloadingWeapon = RangedWeapon;
+
 	switch (RangedWeapon->GetWeaponType())
 	{
 		case EWeaponType::Pistol:
-			PlayAnimMontage(PistolReloadMontage);
+			PlayReloadMontage(PistolReloadMontage);
 			break;
 		case EWeaponType::Rifle:
-			PlayAnimMontage(RifleReloadMontage);
+			PlayReloadMontage(RifleReloadMontage);
 			break;
 		default:
 			UE_LOG(LogTemp, Warning, TEXT("Reload not implemented for this weapon type."));
@@ -353,6 +409,8 @@ void AKangPlayerCharacter::Escape(const FInputActionValue& Value)
 			}
 		}
 	}
+
+	
 }
 
 
@@ -367,33 +425,6 @@ EWeaponType AKangPlayerCharacter::GetCurrentWeaponType() const
 	return EWeaponType::None;
 }
 
-void AKangPlayerCharacter::EnterCombatMode()
-{
-	if (InventoryComponent->GetEquippedWeapon() == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped. Cannot enter combat mode."));
-		return;
-	}
-	bIsInCombatMode = true;
-	bUseControllerRotationYaw = true; // 무기 발사 시 캐릭터 회전 활성화
-	GetCharacterMovement()->bOrientRotationToMovement = false; // 무기 발사 시 캐릭터 이동 방향 회전 비활성화
-
-	// 타이머 리셋 (이미 있으면 새로 갱신)
-	GetWorldTimerManager().SetTimer(
-		CombatModeTimerHandle,
-		this,
-		&AKangPlayerCharacter::ExitCombatMode,
-		CombatModeTimeout,
-		false
-	);
-}
-
-void AKangPlayerCharacter::ExitCombatMode()
-{
-	bIsInCombatMode = false;
-	//bUseControllerRotationYaw = false; // 무기 발사 종료 시 캐릭터 회전 비활성화
-	//GetCharacterMovement()->bOrientRotationToMovement = true; // 무기 발사 종료 시 캐릭터 이동 방향 회전 활성화
-}
 
 void AKangPlayerCharacter::OnReloadNotify()
 {
@@ -401,20 +432,53 @@ void AKangPlayerCharacter::OnReloadNotify()
 	if (ReloadingWeapon)
 	{
 		ReloadingWeapon->ReloadFinished();
-		UE_LOG(LogTemp, Warning, TEXT("Reload finished for weapon: %s"), *ReloadingWeapon->GetName());
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Reload notify received"));
 	
 }
 
-// 몽타주 중단 시 상태 복구
+
+
+void AKangPlayerCharacter::PlayEquipMontage(UAnimMontage* MontageToPlay)
+{
+	if (!MontageToPlay) return;
+
+	bIsEquipping = true;
+	PlayAnimMontage(MontageToPlay);
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		FOnMontageEnded EndDelegate;
+		EndDelegate.BindUObject(this, &AKangPlayerCharacter::OnEquipMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
+	}
+}
+
+void AKangPlayerCharacter::PlayReloadMontage(UAnimMontage* MontageToPlay)
+{
+	if (!MontageToPlay) return;
+
+	PlayAnimMontage(MontageToPlay);
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		FOnMontageEnded EndDelegate;
+		EndDelegate.BindUObject(this, &AKangPlayerCharacter::OnReloadMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
+	}
+}
+
+
 void AKangPlayerCharacter::OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage != RifleReloadMontage) return;
-
 	if (ReloadingWeapon)
 	{
 		ReloadingWeapon->SetGunState(bInterrupted ? EGunState::Idle : EGunState::Idle);
 		ReloadingWeapon = nullptr;
 	}
 }
+
+void AKangPlayerCharacter::OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	bIsEquipping = false;
+}
+

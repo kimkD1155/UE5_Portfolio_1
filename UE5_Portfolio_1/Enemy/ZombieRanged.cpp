@@ -5,6 +5,8 @@
 #include "EnemyProjectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Components/SphereComponent.h"
 
 AZombieRanged::AZombieRanged()
 {
@@ -17,30 +19,69 @@ AZombieRanged::AZombieRanged()
 void AZombieRanged::BeginPlay()
 {
 	Super::BeginPlay();
-	GetWorldTimerManager().SetTimer(ShootTimerHandle, this, &AZombieRanged::ShootProjectile, ShootInterval, true);
+}
+
+void AZombieRanged::SpawnProjectile()
+{
+	if (!ProjectileClass) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AEnemyProjectile* Projectile = GetWorld()->SpawnActor<AEnemyProjectile>(
+		ProjectileClass,
+		GetMesh()->GetSocketTransform(ProjectileSpawnSocket),
+		Params);
+
+	if (Projectile)
+	{
+		Projectile->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, ProjectileSpawnSocket);
+		Projectile->CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Projectile->ProjectileMovement->Deactivate(); // 아직 안 날아감
+
+		HeldProjectile = Projectile;
+	}
 }
 
 void AZombieRanged::ShootProjectile()
 {
-	if (!ProjectileClass) return;
+	AEnemyProjectile* Projectile = HeldProjectile.Get();
+	if (!Projectile) return;
 
-	// 바리케이드 또는 플레이어 방향으로 발사
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (!PC) return;
 
-	APawn* Player = PC->GetPawn();
-	if (!Player) return;
+	Projectile->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	Projectile->CollisionComp->IgnoreActorWhenMoving(this, true);
+	Projectile->ProjectileMovement->ProjectileGravityScale = 0.2f; // 중력 없음
+	Projectile->CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	float DistToPlayer = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
-	if (DistToPlayer > ShootRange) return;
+	FVector SpawnLocation = Projectile->GetActorLocation();
+	FVector TargetLocation;
 
-	FVector Direction = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	FRotator SpawnRotation = Direction.Rotation();
-	FVector SpawnLocation = GetActorLocation() + Direction * 50.f;
+	if (AActor* Target = /* Blackboard TargetActor 가져오는 방식대로 */ nullptr)
+	{
+		TargetLocation = Target->GetActorLocation();
+	}
+	else
+	{
+		TargetLocation = SpawnLocation + GetActorForwardVector() * 1000.f;
+	}
 
-	FActorSpawnParameters Params;
-	Params.Instigator = this;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	UE_LOG(LogTemp, Warning, TEXT("test"));
 
-	GetWorld()->SpawnActor<AEnemyProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, Params);
+	FRotator ShootRotation = (TargetLocation - SpawnLocation).Rotation();
+	Projectile->SetActorRotation(ShootRotation);
+
+	Projectile->ProjectileMovement->Activate();
+	Projectile->ProjectileMovement->Velocity = ShootRotation.Vector() * Projectile->ProjectileMovement->InitialSpeed;
+
+	HeldProjectile = nullptr;
+
+	UE_LOG(LogTemp, Warning, TEXT("IsActive=%d, TickEnabled=%d, Velocity=%s, UpdatedComp=%s"),
+		Projectile->ProjectileMovement->IsActive(),
+		Projectile->ProjectileMovement->IsComponentTickEnabled(),
+		*Projectile->ProjectileMovement->Velocity.ToString(),
+		Projectile->ProjectileMovement->UpdatedComponent ? *Projectile->ProjectileMovement->UpdatedComponent->GetName() : TEXT("null"));
 }
+

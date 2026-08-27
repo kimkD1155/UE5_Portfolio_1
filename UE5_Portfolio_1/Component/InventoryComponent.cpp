@@ -125,13 +125,15 @@ void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 
 	EquippedWeapon = *FoundPtr;
 
+	bIsEquipping = true;
+
 	switch (Slot)
 	{
 		case EWeaponSlot::Primary:
-			OwnerCharacter->PlayAnimMontage(OwnerCharacter->RifleEquipMontage);
+			OwnerCharacter->PlayEquipMontage(OwnerCharacter->RifleEquipMontage);
 			break;
 		case EWeaponSlot::Secondary:
-			OwnerCharacter->PlayAnimMontage(OwnerCharacter->PistolEquipMontage);
+			OwnerCharacter->PlayEquipMontage(OwnerCharacter->PistolEquipMontage);
 			break;
 		case EWeaponSlot::Throwable:
 			break;

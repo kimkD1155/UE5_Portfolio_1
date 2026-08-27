@@ -9,6 +9,12 @@
 /**
  * 
  */
+
+struct FBTAttackMemory
+{
+	FDelegateHandle EndDelegateHandle;
+};
+
 UCLASS()
 class UE5_PORTFOLIO_1_API UBTTask_Attack : public UBTTaskNode
 {
@@ -17,14 +23,7 @@ class UE5_PORTFOLIO_1_API UBTTask_Attack : public UBTTaskNode
 public:
 	UBTTask_Attack();
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual uint16 GetInstanceMemorySize() const override { return sizeof(FBTAttackMemory); }
 
-protected:
-
-	// 한 번 공격 시 데미지
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackDamage = 30.f;
-
-	// 공격 후 대기 시간 (BT가 루프 돌 때 딜레이 역할)
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackCooldown = 1.0f;
 };

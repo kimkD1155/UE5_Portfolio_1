@@ -19,6 +19,11 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 	AAIController* AIC = OwnerComp.GetAIOwner();
 	if (!AIC || !AIC->GetPawn()) return EBTNodeResult::Failed;
 
+	if (OwnerComp.GetBlackboardComponent()->GetValueAsObject(TargetActorKey.SelectedKeyName) != nullptr)
+	{
+		return EBTNodeResult::Succeeded;
+	}
+
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TargetTag, FoundActors);
 	if (FoundActors.Num() == 0) return EBTNodeResult::Failed;

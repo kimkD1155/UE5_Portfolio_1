@@ -3,13 +3,21 @@
 
 #include "ZombieTanker.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AZombieTanker::AZombieTanker()
 {
 	MaxHealth = 200.f;
 	CoinReward = 30;
-	AttackRange = 250.f;
+	AttackRange = 80.f;
 
-	// 느리고 크게
-	GetCharacterMovement()->MaxWalkSpeed = 200.f;
+}
+
+void AZombieTanker::Attack()
+{
+	AActor* Target = GetTargetLocation();
+	if (!Target) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("ZombieNormal Attack!"));
+	UGameplayStatics::ApplyDamage(Target, 30.f, GetController(), this, nullptr);
 }

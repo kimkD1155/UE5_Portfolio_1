@@ -93,5 +93,5 @@ void AEnemySpawner::SpawnEnemy()
 void AEnemySpawner::UpdateDifficulty()
 {
     CurrentSpawnInterval = FMath::Max(CurrentSpawnInterval - SpawnIntervalDecrement, MinSpawnInterval);
-    UE_LOG(LogTemp, Warning, TEXT("Spawn interval: %.1f"), CurrentSpawnInterval);
+    //UE_LOG(LogTemp, Warning, TEXT("Spawn interval: %.1f"), CurrentSpawnInterval);
 }

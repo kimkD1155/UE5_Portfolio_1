@@ -50,6 +50,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* WeaponMesh;
 
+public:
+	UFUNCTION()
+	USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
+
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	EWeaponType WeaponType = EWeaponType::None;
 

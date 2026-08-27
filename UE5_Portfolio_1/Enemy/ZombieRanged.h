@@ -19,7 +19,11 @@ class UE5_PORTFOLIO_1_API AZombieRanged : public AEnemyCharacter
 public:
 	AZombieRanged();
 
+	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void ShootProjectile();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+	void SpawnProjectile();
 
 protected:
 	virtual void BeginPlay() override;
@@ -28,10 +32,11 @@ protected:
 	TSubclassOf<AEnemyProjectile> ProjectileClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Ranged")
-	float ShootInterval = 2.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Ranged")
 	float ShootRange = 1500.f;
 
-	FTimerHandle ShootTimerHandle;
+	UPROPERTY(EditDefaultsOnly, Category = "Attack")
+	FName ProjectileSpawnSocket = TEXT("AttackHitBoxSocket"); // 손/무기 소켓 이름
+
+	UPROPERTY()
+	TWeakObjectPtr<AEnemyProjectile> HeldProjectile;
 };

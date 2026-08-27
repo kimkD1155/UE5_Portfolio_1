@@ -20,6 +20,16 @@ class UCameraComponent;
 class UAnimMontage;
 struct FInputActionValue;
 
+DECLARE_DELEGATE_TwoParams(FOnMontageEnded, UAnimMontage*, bool /*bInterrupted*/);
+
+UENUM(BlueprintType)
+enum class ETurnDirection : uint8
+{
+	None    UMETA(DisplayName = "None"),
+	Left    UMETA(DisplayName = "Left"),
+	Right   UMETA(DisplayName = "Right")
+};
+
 UCLASS()
 class UE5_PORTFOLIO_1_API AKangPlayerCharacter : public ACharacter
 {
@@ -111,30 +121,43 @@ public:
 	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 변수
-	float WalkSpeed = 300.f;
+public:
+	bool bIsAiming = false;
+	bool bIsFiring = false;
+	bool bIsEquipping = false;
+	bool Turn = false;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Turn")
+	ETurnDirection TurnDirection = ETurnDirection::None;
+
+	float WalkSpeed = 450.f;
+	float AimYaw = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Aim")
+	float MovingSpeedThreshold = 10.f; // 이 이상이면 "이동 중"으로 판정
+
+	bool bIsMoving = false;
+
+	void UpdateMovementState();
+	UFUNCTION(BlueprintPure)
+	bool GetbIsAiming() const { return bIsAiming; }
+	UFUNCTION(BlueprintPure)
+	bool GetIsMoving() const { return bIsMoving; }
+	UFUNCTION(BlueprintPure)
+	float GetAimYaw() const { return AimYaw; }
+	UFUNCTION(BlueprintPure)
+	bool CanTurn() const { return Turn; }
 
 	
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponType GetCurrentWeaponType() const;
+	UFUNCTION(BlueprintPure)
+	ETurnDirection GetTurnDirection() const { return TurnDirection; }
+	UFUNCTION(BlueprintPure)
+	ETurnDirection SetTurnDirection(ETurnDirection TD) { return TurnDirection = TD; }
 	UPROPERTY()
 	ARangedWeapon* ReloadingWeapon;
 	
-//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-// 전투모드
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	float CombatModeTimeout = 5.f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	bool bIsInCombatMode = false;
-
-	FTimerHandle CombatModeTimerHandle;
-
-
-
-	void EnterCombatMode();
-	void ExitCombatMode();
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 카메라, FOV 처리 ( AIm )
 protected:
@@ -153,7 +176,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Aim")
 	float AimInterpSpeed = 10.f;
 
-	bool bIsAiming = false;
+
 //ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 // 몽타주 및 애니메이션 관련
 public:
@@ -184,9 +207,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> ShotgunEquipMontage;
 
-//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
-public:
-	bool bIsFiring = false;
+	void PlayReloadMontage(UAnimMontage* MontageToPlay);
+	void PlayEquipMontage(UAnimMontage* MontageToPlay);
+
+
 
 public:
 	UFUNCTION()
@@ -194,9 +218,20 @@ public:
 	UFUNCTION()
 	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	UFUNCTION(BlueprintPure)
-	bool GetbIsAiming() const { return bIsAiming; }
+	UFUNCTION()
+	void OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	UFUNCTION(BlueprintPure)
-	bool GetbIsInCombatMode() const { return bIsInCombatMode; }
+
+//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+//IK 관련
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	FTransform LeftHandIKTarget;
+
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	bool bShouldUseLeftHandIK = false;
+
+	void UpdateLeftHandIK();
+
+
 };

@@ -16,4 +16,6 @@ class UE5_PORTFOLIO_1_API AZombieTanker : public AEnemyCharacter
 	
 public:
 	AZombieTanker();
+
+	virtual void Attack() override;
 };

@@ -8,12 +8,14 @@ AZombieNormal::AZombieNormal()
 {
 	MaxHealth = 40.f;
 	CoinReward = 10;
-	AttackRange = 200.f;
+	AttackRange = 100.f;
 }
 
 void AZombieNormal::Attack()
 {
 	AActor* Target = GetTargetLocation();
 	if (!Target) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("ZombieNormal Attack!"));
 	UGameplayStatics::ApplyDamage(Target, 30.f, GetController(), this, nullptr);
 }
