@@ -16,8 +16,4 @@ UCLASS()
 class UE5_PORTFOLIO_1_API UKangAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
-	
-public:
-	UPROPERTY(BlueprintAssignable)
-	FOnReloadFinished OnReloadFinishedDelegate;
 };

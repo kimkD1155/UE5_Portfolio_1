@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "../Weapon/WeaponBase.h"
-#include "../Ally/AllyBase.h"
 #include "ShopItemData.generated.h"
 
 UENUM(BlueprintType)
@@ -32,6 +31,6 @@ struct FShopItemData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<AWeaponBase> WeaponClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<AAllyBase> AllyClass;
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<AAllyBase> AllyClass;*/
 };

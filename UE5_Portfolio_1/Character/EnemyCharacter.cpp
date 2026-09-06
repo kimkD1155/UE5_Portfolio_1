@@ -57,7 +57,7 @@ void AEnemyCharacter::TakeDamageHandler(AActor* DamagedActor, float Damage, cons
 	if (CurrentHealth <= 0.f) return;
 
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Enemy HP: %.1f / %.1f"), CurrentHealth, MaxHealth);
+	
 
 	if (CurrentHealth <= 0.f)
 	{
@@ -119,7 +119,7 @@ void AEnemyCharacter::PlayAttackMontage()
 {
 	if (!AttackMontage)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Enemy Attack Montage is null"));
+		
 		return;
 	}
 	
@@ -162,7 +162,7 @@ void AEnemyCharacter::OnAttackHitBoxOverlap(UPrimitiveComponent* OverlappedComp,
 
 void AEnemyCharacter::OnAttackMontageEndedInternal(UAnimMontage* Montage, bool bInterrupted)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Attack Montage Ended"));
+	
 	OnAttackMontageEnded.Broadcast();
 }
 
@@ -173,7 +173,7 @@ void AEnemyCharacter::PlayHitReactionMontage(UAnimMontage* MontageToPlay)
 
 	if (!MontageToPlay)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Enemy Hit Reaction Montage is null"));
+		
 		return;
 	}
 	bIsPlayingHitReaction = true; // 재생 시작
@@ -194,13 +194,13 @@ void AEnemyCharacter::PlayHitReactionMontage(UAnimMontage* MontageToPlay)
 
 void AEnemyCharacter::OnDieMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Die Montage Ended"));
+	
 	Destroy();
 }
 
 void AEnemyCharacter::OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Hit Reaction Montage Ended"));
+	
 	GetCharacterMovement()->MaxWalkSpeed = MoveSpeed; // 이동 속도를 원래대로 복원
 	bIsPlayingHitReaction = false; // 재생 종료
 }

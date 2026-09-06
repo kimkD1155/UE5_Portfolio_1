@@ -61,11 +61,6 @@ void AKangPlayerCharacter::BeginPlay()
 		PS->OnCoinChanged.AddDynamic(HUDComponent, &UHUDComponent::UpdateCoinUI);
 		HUDComponent->UpdateCoinUI(PS->GetCoin()); // 초기값 갱신
 	}
-
-	if (UKangAnimInstance* AnimInst = Cast<UKangAnimInstance>(GetMesh()->GetAnimInstance()))
-	{
-		AnimInst->OnReloadFinishedDelegate.AddDynamic(this, &AKangPlayerCharacter::OnReloadNotify);
-	}
 }
 
 // Called every frame
@@ -76,7 +71,7 @@ void AKangPlayerCharacter::Tick(float DeltaTime)
 	UpdateLeftHandIK();
 	if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon()))
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Test"))
+		
 		HUDComponent->UpdateAmmoUI(
 			Ranged->GetCurrentAmmo(),
 			Ranged->GetReserveAmmo(),
@@ -163,7 +158,7 @@ void AKangPlayerCharacter::UpdateLeftHandIK()
 		return;
 	}
 
-	if (EquippedWeapon->GetWeaponMesh()->DoesSocketExist(TEXT("LeftHandGrip")))
+	if (EquippedWeapon->GetWeaponMesh()->DoesSocketExist(TEXT("LeftHandGrip")) && ReloadingWeapon == nullptr)
 	{
 		LeftHandIKTarget = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(TEXT("LeftHandGrip"), RTS_World);
 		bShouldUseLeftHandIK = true;
@@ -216,11 +211,11 @@ void AKangPlayerCharacter::Landed(const FHitResult& Hit)
 
 void AKangPlayerCharacter::Interact(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Interact action triggered!"));
+	
 
 	if (!InteractionComponent->GetCurrentInteractTarget())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No interactable target in sight."));
+		
 		return;
 	}
 
@@ -233,7 +228,7 @@ void AKangPlayerCharacter::Interact(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::Drop(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Drop action triggered!"));
+	
 	
 	InventoryComponent->DropWeapon();
 	
@@ -241,24 +236,16 @@ void AKangPlayerCharacter::Drop(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 {
-	AKangPlayerController* PC = Cast<AKangPlayerController>(GetController());
-	if (PC && PC->IsInPlacementMode())
-	{
-		PC->ConfirmPlacement(); // 배치 모드면 설치
-		return;
-
-	}
-
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
 
 	if (!RangedWeapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped1"));
+		
 		return;
 	}
 	if (bIsEquipping == true)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot fire while equipping a weapon."));
+		
 		return;
 	}
 
@@ -269,29 +256,19 @@ void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 
 	if (RangedWeapon->GetGunState() == EGunState::Reloading)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Reloading..."));
+		
 		return;
 	}
 
+	RangedWeapon->OnWeaponFired.RemoveDynamic(this, &AKangPlayerCharacter::OnWeaponFired);
+	RangedWeapon->OnWeaponFired.AddDynamic(this, &AKangPlayerCharacter::OnWeaponFired);
+
+
 	RangedWeapon->StartFire();
-
-	
-
-	switch (RangedWeapon->GetWeaponType())
-	{
-		case EWeaponType::Pistol:
-			PlayAnimMontage(PistolFireMontage);
-			break;
-		case EWeaponType::Rifle:
-			PlayAnimMontage(RifleFireMontage);
-			break;
-		default:
-			UE_LOG(LogTemp, Warning, TEXT("Fire not implemented for this weapon type."));
-			return;
-
-	}
 	
 }
+
+
 
 void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)
 {
@@ -307,7 +284,7 @@ void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	if (!InventoryComponent->GetEquippedWeapon())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped"));
+		
 		return;
 	}
 	bIsAiming = true;
@@ -329,20 +306,20 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 
 	if (!RangedWeapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon equipped1"));
+		
 		return;
 	}
 
 	if (!RangedWeapon->CanReload())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot reload: No ammo or already full."));
+		
 		return;
 	}
 
 	// 몽타주 있는지 확인
 	if (!PistolReloadMontage || !RifleReloadMontage)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Reload montages not set."));
+		
 		return;
 	}
 
@@ -358,7 +335,7 @@ void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 			PlayReloadMontage(RifleReloadMontage);
 			break;
 		default:
-			UE_LOG(LogTemp, Warning, TEXT("Reload not implemented for this weapon type."));
+			
 			return;
 	}
 	
@@ -383,17 +360,11 @@ void AKangPlayerCharacter::EquipWeapon3(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::EquipWeapon4(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Equip Weapon 4 action triggered!"));
+	
 }
 
 void AKangPlayerCharacter::Escape(const FInputActionValue& Value)
 {
-	AKangPlayerController* PC = Cast<AKangPlayerController>(GetController());
-	if (PC && PC->IsInPlacementMode())
-	{
-		PC->CancelPlacement();
-		return;
-	}
 
 	// 열려있는 상점 찾아서 닫기
 	TArray<AActor*> Shops;
@@ -426,15 +397,6 @@ EWeaponType AKangPlayerCharacter::GetCurrentWeaponType() const
 }
 
 
-void AKangPlayerCharacter::OnReloadNotify()
-{
-	
-	if (ReloadingWeapon)
-	{
-		ReloadingWeapon->ReloadFinished();
-	}
-	
-}
 
 
 
@@ -472,7 +434,14 @@ void AKangPlayerCharacter::OnReloadMontageEnded(UAnimMontage* Montage, bool bInt
 {
 	if (ReloadingWeapon)
 	{
-		ReloadingWeapon->SetGunState(bInterrupted ? EGunState::Idle : EGunState::Idle);
+		if (!bInterrupted)
+		{
+			ReloadingWeapon->ReloadFinished(); // 탄약 채우기는 정상 종료 시에만
+		}
+		else
+		{
+			ReloadingWeapon->SetGunState(EGunState::Idle); // 중단됐으면 그냥 상태만 복구
+		}
 		ReloadingWeapon = nullptr;
 	}
 }
@@ -482,3 +451,20 @@ void AKangPlayerCharacter::OnEquipMontageEnded(UAnimMontage* Montage, bool bInte
 	bIsEquipping = false;
 }
 
+void AKangPlayerCharacter::OnWeaponFired()
+{
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
+	if (!RangedWeapon) return;
+
+	switch (RangedWeapon->GetWeaponType())
+	{
+	case EWeaponType::Pistol:
+		PlayAnimMontage(PistolFireMontage);
+		break;
+	case EWeaponType::Rifle:
+		PlayAnimMontage(RifleFireMontage);
+		break;
+	default:
+		break;
+	}
+}

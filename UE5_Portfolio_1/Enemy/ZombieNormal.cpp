@@ -16,6 +16,6 @@ void AZombieNormal::Attack()
 	AActor* Target = GetTargetLocation();
 	if (!Target) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("ZombieNormal Attack!"));
+	
 	UGameplayStatics::ApplyDamage(Target, 30.f, GetController(), this, nullptr);
 }

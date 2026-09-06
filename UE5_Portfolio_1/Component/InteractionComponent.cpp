@@ -80,7 +80,7 @@ void UInteractionComponent::UpdateInteractionTarget()
 			// TODO: Step 4¿¡¼­ HUD ÈùÆ® ¼û±â±â
 			if (HUDComp)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Hiding Interact Hint"));
+				
 				HUDComp->HideInteractHint();
 			}
 		}

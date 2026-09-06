@@ -113,7 +113,6 @@ protected:
     float CurrentRecoilPitchOffset = 0.0f;
     float CurrentRecoilYawOffset = 0.0f;
 
-    void ApplyRecoilKick();
     void TickRecoilRecovery(float DeltaTime);
 
 public:

@@ -66,10 +66,9 @@ void AWeaponBase::Equip(ACharacter* NewOwner)
 
     // Attach 후 소켓 기준 보정값 적용
     SetActorRelativeTransform(GripOffset);
-
-    UE_LOG(LogTemp, Warning, TEXT("Attached to socket: %s, Location: %s"),
-        *GripSocketName.ToString(),
-        *GetActorLocation().ToString());
+    
+    UE_LOG(LogTemp, Warning, TEXT("GripOffset applied: Loc=%s Rot=%s"),
+        *GripOffset.GetLocation().ToString(), *GripOffset.Rotator().ToString());
 }
 
 void AWeaponBase::Unequip()

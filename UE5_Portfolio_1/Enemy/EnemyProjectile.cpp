@@ -42,7 +42,7 @@ void AEnemyProjectile::BeginPlay()
 
 void AEnemyProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Projectile EndPlay: Reason = %d"), (int32)EndPlayReason);
+	
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -68,7 +68,7 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 		nullptr
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("OnHit: OtherActor = %s"), OtherActor ? *OtherActor->GetName() : TEXT("null"));
+	
 	
 
 	Destroy();

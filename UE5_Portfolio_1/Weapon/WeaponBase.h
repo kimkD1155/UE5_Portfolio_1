@@ -12,6 +12,8 @@
 class USkeletalMeshComponent;
 class USoundBase;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponFired);
+
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
@@ -103,6 +105,9 @@ public:
 	void PlayFireSound();
 	void PlayFireMontage();
 	void PlayReloadMontage();
+
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponFired OnWeaponFired;
 
 
 

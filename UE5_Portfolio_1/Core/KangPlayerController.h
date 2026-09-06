@@ -19,39 +19,6 @@ protected:
 	UInputMappingContext* IMC;
 
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
-	virtual void SetupInputComponent() override;
 
-
-
-	void UpdateGhostPreview();
-
-	UPROPERTY()
-	AAllyBase* GhostPreview;
-
-	TSubclassOf<AAllyBase> PendingAllyClass;
-
-	bool bIsInPlacementMode = false;
-
-public:
-	// 배치 모드 시작 (상점에서 구매 시 호출)
-	UFUNCTION(BlueprintCallable)
-	void StartPlacementMode(TSubclassOf<AAllyBase> AllyClass);
-
-	// 배치 확정
-	void ConfirmPlacement();
-
-	// 배치 취소
-	void CancelPlacement();
-
-	bool IsInPlacementMode() const { return bIsInPlacementMode; }
-
-	UPROPERTY(EditDefaultsOnly, Category = "Placement")
-	UMaterialInterface* GhostMaterial;
-
-	UPROPERTY()
-	UMaterialInstanceDynamic* GhostMatInstance; // 코드에서 동적으로 색상을 변경하기위해 사용
-
-	bool IsValidPlacementLocation(const FVector& Location) const;
 
 };

@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/VerticalBox.h"
 #include "../Core/KangPlayerController.h"
+#include "../Manager/AllyManager.h"
+#include "../Ally/AllySpawnPoint.h"
 
 void UShopWidget::InitShop(AShop* InShop)
 {
@@ -59,7 +61,7 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 
 	if (!PS->SpendCoin(Item.Price))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Not enough coin: %d / %d"), PS->GetCoin(), Item.Price);
+		
 		return;
 	}
 
@@ -78,18 +80,32 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 		{
 			UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
 			if (Inventory) Inventory->PickupWeapon(Weapon);
-			UE_LOG(LogTemp, Warning, TEXT("Bought: %s"), *Item.ItemName.ToString());
+			
 		}
 	}
-	else if (Item.ItemType == EShopItemType::Ally && Item.AllyClass )
+	/*else if (Item.ItemType == EShopItemType::Ally && Item.AllyClass )
 	{
-		AKangPlayerController* KPC = Cast<AKangPlayerController>(GetWorld()->GetFirstPlayerController());
-		if (KPC)
+		UAllyManager* AllyManager = GetWorld()->GetSubsystem<UAllyManager>();
+		if (!AllyManager) return;
+
+		AAllySpawnPoint* SpawnPoint = AllyManager->GetAvailableSpawnPoint();
+		if (!SpawnPoint)
 		{
-			KPC->StartPlacementMode(Item.AllyClass);
-			// »óÁ¡ ´Ý±â
-			SetVisibility(ESlateVisibility::Hidden);
-			Shop->SetShopOpen(false);
+			UE_LOG(LogTemp, Warning, TEXT("No available ally spawn point"));
+			PS->AddCoin(Item.Price);
+			return;
 		}
-	}
+
+		AAllyBase* NewAlly = GetWorld()->SpawnActor<AAllyBase>(
+			Item.AllyClass,
+			SpawnPoint->GetActorLocation(),
+			SpawnPoint->GetActorRotation()
+		);
+
+		if (NewAlly)
+		{
+			SpawnPoint->bIsOccupied = true;
+			UE_LOG(LogTemp, Warning, TEXT("Bought Ally: %s"), *Item.ItemName.ToString());
+		}
+	}*/
 }

@@ -25,7 +25,7 @@ void UInventoryComponent::BeginPlay()
 	OwnerCharacter = Cast<AKangPlayerCharacter>(GetOwner());
 	if (!OwnerCharacter)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InventoryComponent is not attached to a KangPlayerCharacter!"));
+		
 		return;
 	}
 	// ...
@@ -55,7 +55,7 @@ void UInventoryComponent::PickupWeapon(AWeaponBase* Weapon)
 {
 	if (!Weapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PickupWeapon called with null Weapon"));
+		
 		return;
 	}
 
@@ -79,7 +79,7 @@ void UInventoryComponent::PickupWeapon(AWeaponBase* Weapon)
 
 	EquipSlot(Slot);
 
-	UE_LOG(LogTemp, Warning, TEXT("Picked up weapon: %s (Slot: %d)"), *Weapon->GetName(), (int32)Slot);
+	
 }
 
 void UInventoryComponent::DropWeapon()
@@ -99,7 +99,7 @@ void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 	AWeaponBase** FoundPtr = WeaponSlots.Find(Slot);
 	if (!FoundPtr || !*FoundPtr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No weapon found in slot: %d"), (int32)Slot);
+		
 		return;
 	}
 
@@ -107,7 +107,7 @@ void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 
 	if (EquippedWeapon)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Holstering weapon: %s (Slot: %d)"), *EquippedWeapon->GetName(), (int32)CurrentSlot);
+		
 
 		FName* HolsterSocket = HolsterSocketMap.Find(CurrentSlot);
 		if (HolsterSocket)
@@ -118,7 +118,7 @@ void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("No holster socket mapped for slot: %d"), (int32)CurrentSlot);
+			
 		}
 	}
 
@@ -143,10 +143,8 @@ void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 
 	
 
-	EquippedWeapon->AttachToComponent(OwnerCharacter->GetMesh(),
-		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		EquippedWeapon->GripSocketName);
+	EquippedWeapon->Equip(OwnerCharacter);
 
 	CurrentSlot = Slot;
-	UE_LOG(LogTemp, Log, TEXT("Equipped weapon: %s (Slot: %d)"), *EquippedWeapon->GetName(), (int32)CurrentSlot);
+	
 }

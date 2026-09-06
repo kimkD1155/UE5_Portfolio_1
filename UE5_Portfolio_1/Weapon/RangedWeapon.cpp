@@ -25,22 +25,22 @@ void ARangedWeapon::BeginPlay()
 
 void ARangedWeapon::StartFire()
 {
-    UE_LOG(LogTemp, Warning, TEXT("RangedWeapon: StartFire"));
+    
 }
 
 void ARangedWeapon::StopFire()
 {
-    UE_LOG(LogTemp, Warning, TEXT("RangedWeapon: StopFire"));
+    
 }
 
 void ARangedWeapon::StartAim()
 {
-    UE_LOG(LogTemp, Warning, TEXT("RangedWeapon: StartAim"));
+    
 }
 
 void ARangedWeapon::StopAim()
 {
-    UE_LOG(LogTemp, Warning, TEXT("RangedWeapon: StopAim"));
+    
 }
 
 void ARangedWeapon::Reload()
@@ -75,23 +75,6 @@ bool ARangedWeapon::CanReload() const
         && ReserveAmmo > 0;
 }
 
-void ARangedWeapon::ApplyRecoilKick()
-{
-    if (!OwnerCharacter) return;
-
-    AController* PC = OwnerCharacter->GetController();
-    if (!PC) return;
-
-    float YawKick = FMath::FRandRange(RecoilYawKickMin, RecoilYawKickMax);
-
-    CurrentRecoilPitchOffset = FMath::Clamp(CurrentRecoilPitchOffset + RecoilPitchKick, 0.0f, MaxRecoilPitchOffset);
-    CurrentRecoilYawOffset += YawKick;
-
-    FRotator Rot = PC->GetControlRotation();
-    Rot.Pitch += RecoilPitchKick;
-    Rot.Yaw += YawKick;
-    PC->SetControlRotation(Rot);
-}
 
 void ARangedWeapon::TickRecoilRecovery(float DeltaTime)
 {

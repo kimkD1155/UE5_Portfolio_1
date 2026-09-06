@@ -4,18 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "AllyPlacementArea.generated.h"
-
-class UBoxComponent;
+#include "AllySpawnPoint.generated.h"
 
 UCLASS()
-class UE5_PORTFOLIO_1_API AAllyPlacementArea : public AActor
+class UE5_PORTFOLIO_1_API AAllySpawnPoint : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AAllyPlacementArea();
+	AAllySpawnPoint();
 
 protected:
 	// Called when the game starts or when spawned
@@ -26,10 +24,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsOccupied = false;
 
-	bool IsLocationInside(const FVector& Location) const;
-
-protected:
-	UPROPERTY(VisibleAnywhere)
-	UBoxComponent* BoxComponent;
 };

@@ -68,7 +68,7 @@ void AZombieRanged::ShootProjectile()
 		TargetLocation = SpawnLocation + GetActorForwardVector() * 1000.f;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("test"));
+	
 
 	FRotator ShootRotation = (TargetLocation - SpawnLocation).Rotation();
 	Projectile->SetActorRotation(ShootRotation);
@@ -77,11 +77,5 @@ void AZombieRanged::ShootProjectile()
 	Projectile->ProjectileMovement->Velocity = ShootRotation.Vector() * Projectile->ProjectileMovement->InitialSpeed;
 
 	HeldProjectile = nullptr;
-
-	UE_LOG(LogTemp, Warning, TEXT("IsActive=%d, TickEnabled=%d, Velocity=%s, UpdatedComp=%s"),
-		Projectile->ProjectileMovement->IsActive(),
-		Projectile->ProjectileMovement->IsComponentTickEnabled(),
-		*Projectile->ProjectileMovement->Velocity.ToString(),
-		Projectile->ProjectileMovement->UpdatedComponent ? *Projectile->ProjectileMovement->UpdatedComponent->GetName() : TEXT("null"));
 }
 

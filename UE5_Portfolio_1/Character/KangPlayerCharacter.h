@@ -210,11 +210,12 @@ public:
 	void PlayReloadMontage(UAnimMontage* MontageToPlay);
 	void PlayEquipMontage(UAnimMontage* MontageToPlay);
 
+	UFUNCTION()
+	void OnWeaponFired();
+
 
 
 public:
-	UFUNCTION()
-	void OnReloadNotify();
 	UFUNCTION()
 	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
@@ -225,10 +226,10 @@ public:
 //天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天天
 //IK 婦溼
 public:
-	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	UPROPERTY(BlueprintReadWrite, Category = "IK")
 	FTransform LeftHandIKTarget;
 
-	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	UPROPERTY(BlueprintReadWrite, Category = "IK")
 	bool bShouldUseLeftHandIK = false;
 
 	void UpdateLeftHandIK();

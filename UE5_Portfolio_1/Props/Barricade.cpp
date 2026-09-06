@@ -82,18 +82,18 @@ void ABarricade::Interact_Implementation(ACharacter* Interactor)
 {
 	if (IsDestroyed())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Barricade is destroyed, cannot repair"));
+		
 		return;
 	}
 
 	if (IsFullHealth())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Barricade already at full health"));
+		
 		return;
 	}
 
 	Repair(RepairAmountPerInteract);
-	UE_LOG(LogTemp, Warning, TEXT("Barricade repaired by %s: %.1f / %.1f"), *Interactor->GetName(), CurrentHealth, MaxHealth);
+	
 }
 
 FText ABarricade::GetInteractHintText_Implementation()

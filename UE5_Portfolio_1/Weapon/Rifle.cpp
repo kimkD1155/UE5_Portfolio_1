@@ -18,7 +18,7 @@ ARifle::ARifle()
     GunData.MaxReserveAmmo = 90;
     GunData.Damage = 25.f;
     GunData.Range = 5000.f;
-    GunData.FireRate = 0.1f;
+    GunData.FireRate = 0.12f;
     GunData.ReloadTime = 2.0f;
 }
 
@@ -45,6 +45,7 @@ void ARifle::StartFire()
 
     if (bIsAutomatic)
     {
+        
         GetWorldTimerManager().SetTimer(
             FireTimerHandle,
             this,
@@ -74,9 +75,13 @@ void ARifle::FireOnce()
     }
 
     // ── 탄약 소비 ─────────────────────────────────
-    CurrentAmmo--;
+    
     if (CurrentAmmo <= 0)
+    {
         SetGunState(EGunState::Empty);
+        return;
+    }
+    CurrentAmmo--;
 
     // ── 이펙트 ────────────────────────────────────
     /*if (MuzzleFlashEffect)
@@ -101,12 +106,46 @@ void ARifle::FireOnce()
         return;
     }
 
-    FVector CameraLocation;
-    FRotator CameraRotation;
-    Controller->GetPlayerViewPoint(CameraLocation, CameraRotation);
+    FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
+    FVector AimPoint;
 
-    FVector TraceStart = CameraLocation;
-    FVector TraceEnd = CameraLocation + CameraRotation.Vector() * GunData.Range;
+    if (AController* OwnerController = OwnerChar->GetController())
+    {
+        if (OwnerController->IsPlayerController())
+        {
+            // 1단계: 카메라 기준으로 크로스헤어가 가리키는 지점 탐색
+            FVector CameraLocation;
+            FRotator CameraRotation;
+            OwnerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+            FVector CameraTraceEnd = CameraLocation + CameraRotation.Vector() * GunData.Range;
+
+            FHitResult CameraHit;
+            FCollisionQueryParams CameraParams;
+            CameraParams.AddIgnoredActor(this);
+            CameraParams.AddIgnoredActor(OwnerChar);
+
+            bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+                CameraHit, CameraLocation, CameraTraceEnd, ECC_Pawn, CameraParams
+            );
+
+            // 맞았으면 충돌 지점, 안 맞았으면 사거리 끝점을 조준 목표로
+            AimPoint = bCameraHit ? CameraHit.ImpactPoint : CameraTraceEnd;
+        }
+        else
+        {
+            // AI(Ally 등): 캐릭터 정면 기준
+            AimPoint = OwnerChar->GetActorLocation() + OwnerChar->GetActorForwardVector() * GunData.Range;
+        }
+    }
+    else
+    {
+        AimPoint = OwnerChar->GetActorLocation() + OwnerChar->GetActorForwardVector() * GunData.Range;
+    }
+
+    // 2단계: 총구에서 조준 목표를 향해 실제 데미지 판정 트레이스
+    FVector TraceStart = MuzzleLocation;
+    FVector AimDirection = (AimPoint - MuzzleLocation).GetSafeNormal();
+    FVector TraceEnd = TraceStart + AimDirection * GunData.Range;
 
     FHitResult HitResult;
     FCollisionQueryParams Params;
@@ -116,30 +155,25 @@ void ARifle::FireOnce()
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         HitResult, TraceStart, TraceEnd, ECC_Pawn, Params
     );
-    ApplyRecoilKick();
 
     PlayFireSound();
-    UE_LOG(LogTemp, Warning, TEXT("Rifle Fire Montage"))
     PlayFireMontage();
+    OnWeaponFired.Broadcast(); // 캐릭터 몽타주 트리거
 
-    // ── 데미지 ────────────────────────────────────
     if (bHit && HitResult.GetActor())
     {
         UGameplayStatics::ApplyPointDamage(
             HitResult.GetActor(),
             GunData.Damage,
-            CameraRotation.Vector(),
+            AimDirection,
             HitResult,
-            Controller,
+            OwnerChar->GetController(),
             this,
             nullptr
         );
     }
 
-    // ── 디버그 ────────────────────────────────────
-//#if WITH_EDITOR
-//    DrawDebugLine(GetWorld(), TraceStart,
-//        bHit ? HitResult.ImpactPoint : TraceEnd,
-//        FColor::Red, false, 0.1f, 0, 1.f);
-//#endif
+#if WITH_EDITOR
+    DrawDebugLine(GetWorld(), TraceStart, bHit ? HitResult.ImpactPoint : TraceEnd, FColor::Red, false, 1.f);
+#endif
 }

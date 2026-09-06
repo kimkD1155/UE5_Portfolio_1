@@ -6,9 +6,5 @@
 
 void UAnimNotify_ReloadFinished::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	UKangAnimInstance* AnimInst = Cast<UKangAnimInstance>(MeshComp->GetAnimInstance());
-	if (AnimInst)
-	{
-		AnimInst->OnReloadFinishedDelegate.Broadcast();
-	}
+	
 }

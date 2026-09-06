@@ -64,7 +64,7 @@ protected:
 	AKangPlayerCharacter* OwnerCharacter;
 
 	bool bIsEquipping = false;
-
+	
 	UPROPERTY()
 	AWeaponBase* EquippedWeapon;
 
