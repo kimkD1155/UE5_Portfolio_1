@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BTTask_Attack.h"
@@ -24,15 +24,15 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	APawn* Pawn = AIController->GetPawn();
 	if (!Pawn) return EBTNodeResult::Failed;
 
-	// Blackboard¿¡¼­ Å¸°Ù °¡Á®¿À±â
+	// Blackboardì—ì„œ íƒ€ê²Ÿ ê°€ì ¸ì˜¤ê¸°
 	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor")));
 	if (!Target) return EBTNodeResult::Failed;
 
 	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(Pawn);
 	if (!Enemy) return EBTNodeResult::Failed;
 
-	// °Å¸® Ã¼Å©
-	// ¼öÁ¤ - ÄÄÆ÷³ÍÆ® ¹Ù¿îµå ±âÁØ °¡Àå °¡±î¿î Á¡
+	// ê±°ë¦¬ ì²´í¬
+	// ìˆ˜ì • - ì»´í¬ë„ŒíŠ¸ ë°”ìš´ë“œ ê¸°ì¤€ ê°€ì¥ ê°€ê¹Œìš´ ì 
 	FVector TargetLocation = OwnerComp.GetBlackboardComponent()->GetValueAsVector(TEXT("TargetLocation"));
 	float Distance = FVector::Dist(Pawn->GetActorLocation(), TargetLocation);
 
@@ -40,11 +40,11 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 
 //#if WITH_EDITOR
-//// Àû ¡æ Å¸°Ù °¡Àå °¡±î¿î Á¡ ¶óÀÎ
+//// ì  â†’ íƒ€ê²Ÿ ê°€ì¥ ê°€ê¹Œìš´ ì  ë¼ì¸
 //	DrawDebugLine(GetWorld(), Pawn->GetActorLocation(), TargetLocation, FColor::Yellow, false, 1.f, 0, 2.f);
-//	// Å¸°Ù °¡Àå °¡±î¿î Á¡ ±¸Ã¼
+//	// íƒ€ê²Ÿ ê°€ì¥ ê°€ê¹Œìš´ ì  êµ¬ì²´
 //	DrawDebugSphere(GetWorld(), TargetLocation, 20.f, 12, FColor::Yellow, false, 1.f);
-//	// AttackRange ±¸Ã¼
+//	// AttackRange êµ¬ì²´
 //	DrawDebugSphere(GetWorld(), Pawn->GetActorLocation(), Enemy->GetAttackRange(), 24,
 //		Distance <= Enemy->GetAttackRange() ? FColor::Green : FColor::Red, false, 1.f);
 //#endif
@@ -52,7 +52,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	if (Distance > Enemy->GetAttackRange())
 	{
 		
-		return EBTNodeResult::Failed; // ¹üÀ§ ¹ÛÀÌ¸é ´Ù½Ã MoveTo·Î
+		return EBTNodeResult::Failed; // ë²”ìœ„ ë°–ì´ë©´ ë‹¤ì‹œ MoveToë¡œ
 	}
 
 	FBTAttackMemory* Memory = reinterpret_cast<FBTAttackMemory*>(NodeMemory);
@@ -78,15 +78,15 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	//UE_LOG(LogTemp, Warning, TEXT("Target: %s"), Target ? *Target->GetName() : TEXT("NULL"));
 	//UE_LOG(LogTemp, Warning, TEXT("Distance: %.1f / AttackRange: %.1f"), Distance, AttackRange);
 
-	// µ¥¹ÌÁö Àû¿ë
+	// ë°ë¯¸ì§€ ì ìš©
 	//Enemy->PlayAttackMontage();
 	//
 
-	//// Äğ´Ù¿î ´ë±â ÈÄ Success
+	//// ì¿¨ë‹¤ìš´ ëŒ€ê¸° í›„ Success
 	//FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 
-	//OwnerComp.GetBlackboardComponent()->ClearValue(TEXT("TargetActor")); // Ãß°¡
-	//// Äğ´Ù¿îÀº BT ³ëµå »çÀÌ¿¡ Wait ³ëµå·Î Ã³¸®ÇÏ´Â °Ô ´õ ±ò²ûÇÔ
+	//OwnerComp.GetBlackboardComponent()->ClearValue(TEXT("TargetActor")); // ì¶”ê°€
+	//// ì¿¨ë‹¤ìš´ì€ BT ë…¸ë“œ ì‚¬ì´ì— Wait ë…¸ë“œë¡œ ì²˜ë¦¬í•˜ëŠ” ê²Œ ë” ê¹”ë”í•¨
 	//return EBTNodeResult::Succeeded;
 }
 

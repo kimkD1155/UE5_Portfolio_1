@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "InteractionComponent.h"
@@ -37,7 +37,7 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
 void UInteractionComponent::UpdateInteractionTarget()
 {
-	// Ä«¸Ş¶ó À§Ä¡ / ¹æÇâ °¡Á®¿À±â
+	// ì¹´ë©”ë¼ ìœ„ì¹˜ / ë°©í–¥ ê°€ì ¸ì˜¤ê¸°
 	if (!OwnerCharacter || !OwnerCharacter->GetController()) return;
 
 	FVector CameraLocation;
@@ -57,13 +57,13 @@ void UInteractionComponent::UpdateInteractionTarget()
 
 	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
 
-	// IInteractable ±¸ÇöÇÑ ¾×ÅÍ¸¸ ´ë»óÀ¸·Î
+	// IInteractable êµ¬í˜„í•œ ì•¡í„°ë§Œ ëŒ€ìƒìœ¼ë¡œ
 	if (HitActor && HitActor->Implements<UInteractableInterface>())
 	{
-		if (CurrentInteractTarget != HitActor || CurrentInteractTarget == HitActor) // ÇöÀç Å¸°ÙÀÌ °°À» ¶§µµ ¾÷µ¥ÀÌÆ®
+		if (CurrentInteractTarget != HitActor || CurrentInteractTarget == HitActor) // í˜„ì¬ íƒ€ê²Ÿì´ ê°™ì„ ë•Œë„ ì—…ë°ì´íŠ¸
 		{
 			CurrentInteractTarget = HitActor;
-			// TODO: Step 4¿¡¼­ HUD ÈùÆ® ÅØ½ºÆ® ¾÷µ¥ÀÌÆ®
+			// TODO: Step 4ì—ì„œ HUD íŒíŠ¸ í…ìŠ¤íŠ¸ ì—…ë°ì´íŠ¸
 			if (HUDComp)
 			{
 
@@ -77,7 +77,7 @@ void UInteractionComponent::UpdateInteractionTarget()
 		if (CurrentInteractTarget != nullptr)
 		{
 			CurrentInteractTarget = nullptr;
-			// TODO: Step 4¿¡¼­ HUD ÈùÆ® ¼û±â±â
+			// TODO: Step 4ì—ì„œ HUD íŒíŠ¸ ìˆ¨ê¸°ê¸°
 			if (HUDComp)
 			{
 				
@@ -86,5 +86,5 @@ void UInteractionComponent::UpdateInteractionTarget()
 		}
 		
 	}
-	// ÇöÀç Å¸°Ù¾×ÅÍ°¡ ÀÖ´ÂÁö È®ÀÎ
+	// í˜„ì¬ íƒ€ê²Ÿì•¡í„°ê°€ ìˆëŠ”ì§€ í™•ì¸
 }

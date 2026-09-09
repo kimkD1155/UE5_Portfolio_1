@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -25,12 +25,12 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-// ���� �Ⱦ� �� ���
+//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+// 무기 픽업 및 드랍
 protected:
 
 
-	// ����Ʈ���̽� ���� �Ÿ�
+	// 라인트레이스 감지 거리
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
 	float InteractTraceDistance = 600.f;
 
@@ -45,9 +45,9 @@ private:
 	UPROPERTY()
 	UHUDComponent* HUDComp = nullptr;
 
-	void UpdateInteractionTarget();   // Tick���� ȣ��
+	void UpdateInteractionTarget();   // Tick에서 호출
 
 	UPROPERTY()
-	AActor* CurrentInteractTarget = nullptr;   // ���� ���� ���� ���
-	//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
+	AActor* CurrentInteractTarget = nullptr;   // 현재 조준 중인 대상
+	//ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 };

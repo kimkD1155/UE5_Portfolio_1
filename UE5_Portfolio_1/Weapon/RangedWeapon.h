@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,6 +14,9 @@ enum class EGunState : uint8
     Reloading,
     Empty
 };
+
+// 탄약(현재/예비)이 바뀔 때마다 브로드캐스트. HUD 가 매 프레임 폴링하지 않도록.
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChanged, int32, CurrentAmmo, int32, ReserveAmmo);
 
 USTRUCT(BlueprintType)
 struct FGunData
@@ -32,11 +35,16 @@ struct FGunData
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     float Range;
 
+    // 자동 발사 간격(초). bAutomatic 이 false 면 사용되지 않음
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     float FireRate;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     float ReloadTime;
+
+    // true = 버튼을 누르고 있는 동안 연사, false = 클릭당 1발
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+    bool bAutomatic = false;
 };
 
 UCLASS()
@@ -53,6 +61,12 @@ public:
     virtual void StopFire() override;
     virtual void StartAim() override;
     virtual void StopAim() override;
+
+    // AI 등에서 자동/반자동과 무관하게 정확히 1발만 쏘고 싶을 때
+    void FireSingle();
+
+    UPROPERTY(BlueprintAssignable, Category = "Gun")
+    FOnAmmoChanged OnAmmoChanged;
 
     bool CanFire() const;
     bool CanReload() const;
@@ -75,6 +89,12 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+
+    // 1발 발사: 조준점 해석 → 히트스캔 → 데미지. 권총/소총 공통 로직.
+    // 특수 무기(샷건 펠릿 등)는 이 함수를 override 한다.
+    virtual void FireOnce();
+
+    FTimerHandle FireTimerHandle;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gun")
     FGunData GunData;
@@ -113,8 +133,15 @@ protected:
     float CurrentRecoilPitchOffset = 0.0f;
     float CurrentRecoilYawOffset = 0.0f;
 
-    void TickRecoilRecovery(float DeltaTime);
+    UPROPERTY(EditAnywhere, Category = "Weapon")
+    float AimSpread = 1.5f; 
+
+    FVector ApplyAimSpread(const FVector& AimDir) const;
+
+    void BroadcastAmmo() { OnAmmoChanged.Broadcast(CurrentAmmo, ReserveAmmo); }
 
 public:
     void ReloadFinished();
 };
+
+

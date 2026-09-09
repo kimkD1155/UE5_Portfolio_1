@@ -1,10 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "HUDComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/Character.h"
 #include "../Props/Barricade.h"
+#include "../Component/InventoryComponent.h"
+#include "../Weapon/RangedWeapon.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
@@ -83,7 +85,41 @@ void UHUDComponent::BeginPlay()
 			Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI);
 		}
 	}
-	
+
+	// 탄약 UI: 인벤토리의 무기 교체 이벤트에 바인딩, 이미 무기가 있으면 즉시 반영
+	if (OwnerCharacter)
+	{
+		if (UInventoryComponent* Inventory = OwnerCharacter->FindComponentByClass<UInventoryComponent>())
+		{
+			Inventory->OnWeaponEquipped.AddDynamic(this, &UHUDComponent::HandleWeaponEquipped);
+			if (AWeaponBase* Current = Inventory->GetEquippedWeapon())
+			{
+				HandleWeaponEquipped(Current);
+			}
+		}
+	}
+}
+
+void UHUDComponent::HandleWeaponEquipped(AWeaponBase* NewWeapon)
+{
+	if (BoundAmmoWeapon)
+	{
+		BoundAmmoWeapon->OnAmmoChanged.RemoveDynamic(this, &UHUDComponent::HandleAmmoChanged);
+	}
+
+	BoundAmmoWeapon = Cast<ARangedWeapon>(NewWeapon);
+
+	if (BoundAmmoWeapon)
+	{
+		BoundAmmoWeapon->OnAmmoChanged.AddDynamic(this, &UHUDComponent::HandleAmmoChanged);
+		HandleAmmoChanged(BoundAmmoWeapon->GetCurrentAmmo(), BoundAmmoWeapon->GetReserveAmmo());
+	}
+}
+
+void UHUDComponent::HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo)
+{
+	const FText Name = BoundAmmoWeapon ? BoundAmmoWeapon->GetWeaponName() : FText::GetEmpty();
+	UpdateAmmoUI(CurrentAmmo, ReserveAmmo, Name);
 }
 
 
@@ -120,7 +156,7 @@ void UHUDComponent::InitBarricadeUI(ABarricade* Barricade)
 {
 	if (!BarricadeWidget || !Barricade) return;
 	BarricadeWidget->InitWidget(Barricade);
-	Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI); // ���ε�
+	Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI); // 바인딩
 }
 
 void UHUDComponent::UpdateBarricadeUI(float CurrentHP, float MaxHP)

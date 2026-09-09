@@ -1,52 +1,55 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EnemySpawner.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
+#include "../Manager/EnemyManager.h"
 
 
 // Sets default values
 AEnemySpawner::AEnemySpawner()
 {
-	PrimaryActorTick.bCanEverTick = false;
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    PrimaryActorTick.bCanEverTick = true;
+    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
-	SpawnArea = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawnArea"));
-	SpawnArea->SetupAttachment(RootComponent);
-	SpawnArea->SetBoxExtent(FVector(200.f, 200.f, 100.f));
-	SpawnArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    SpawnArea = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawnArea"));
+    SpawnArea->SetupAttachment(RootComponent);
+    SpawnArea->SetBoxExtent(FVector(200.f, 200.f, 100.f));
+    SpawnArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AEnemySpawner::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
+    Super::Tick(DeltaTime);
+	UEnemyManager* Manager = GetWorld()->GetSubsystem<UEnemyManager>();
+	UE_LOG(LogTemp, Warning, TEXT("Current Enemy Count: %d"), Manager ? Manager->GetEnemyCount() : 0);
 }
 
 // Called when the game starts or when spawned
 void AEnemySpawner::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	CurrentSpawnInterval = InitialSpawnInterval;
+    CurrentSpawnInterval = InitialSpawnInterval;
 
-	float RandomDelay = FMath::RandRange(0.f, InitialSpawnInterval);
-	GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, RandomDelay, false);
-	GetWorldTimerManager().SetTimer(DifficultyTimerHandle, this, &AEnemySpawner::UpdateDifficulty, DifficultyUpInterval, true);
+    float RandomDelay = FMath::RandRange(0.f, InitialSpawnInterval);
+    GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, RandomDelay, false);
+    GetWorldTimerManager().SetTimer(DifficultyTimerHandle, this, &AEnemySpawner::UpdateDifficulty, DifficultyUpInterval, true);
 }
 
 TSubclassOf<ACharacter> AEnemySpawner::SelectEnemyClass()
 {
     if (EnemySpawnInfos.Num() == 0) return nullptr;
 
-    // ÀüÃ¼ °¡ÁßÄ¡ ÇÕ»ê
+    // ì „ì²´ ê°€ì¤‘ì¹˜ í•©ì‚°
     float TotalWeight = 0.f;
     for (const FEnemySpawnInfo& Info : EnemySpawnInfos)
     {
         TotalWeight += Info.SpawnWeight;
     }
 
-    // ·£´ý °ª »Ì±â
+    // ëžœë¤ ê°’ ë½‘ê¸°
     float RandValue = FMath::RandRange(0.f, TotalWeight);
     float AccumulatedWeight = 0.f;
 
@@ -84,10 +87,23 @@ void AEnemySpawner::SpawnEnemy()
 
     FActorSpawnParameters Params;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-    GetWorld()->SpawnActor<ACharacter>(SelectedClass, SpawnLocation, SpawnRotation, Params);
+
+    ACharacter* SpawnedEnemy = GetWorld()->SpawnActor<ACharacter>(SelectedClass, SpawnLocation, SpawnRotation, Params);
+    if (SpawnedEnemy)
+    {
+        if (UEnemyManager* Manager = GetWorld()->GetSubsystem<UEnemyManager>())
+        {
+            Manager->RegisterEnemy(SpawnedEnemy);
+        }
+    }
 
     float RandomInterval = FMath::RandRange(CurrentSpawnInterval * 0.5f, CurrentSpawnInterval * 1.5f);
     GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, RandomInterval, false);
+}
+
+void AEnemySpawner::OnEnemyDestroyed(AActor* DestroyedActor)
+{
+    CurrentEnemyCount = FMath::Max(0, CurrentEnemyCount - 1);
 }
 
 void AEnemySpawner::UpdateDifficulty()

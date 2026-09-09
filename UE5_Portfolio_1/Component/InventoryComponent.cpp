@@ -3,91 +3,66 @@
 
 #include "InventoryComponent.h"
 #include "GameFramework/Character.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "../Weapon/WeaponBase.h"
-#include "../Character/KangPlayerCharacter.h"
+#include "../Animation/MontageHelper.h"
 
-// Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
-
-// Called when the game starts
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwnerCharacter = Cast<AKangPlayerCharacter>(GetOwner());
-	if (!OwnerCharacter)
-	{
-		
-		return;
-	}
-	// ...
-	// ±âº» º¸Á¶¹«±â(±ÇÃÑ) Áö±Þ
-	if (DefaultWeaponClass && OwnerCharacter)
+	OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!OwnerCharacter) return;
+
+	// ê¸°ë³¸ ë¬´ê¸° ì§€ê¸‰
+	if (DefaultWeaponClass)
 	{
 		FActorSpawnParameters Params;
 		Params.Owner = OwnerCharacter;
 		AWeaponBase* DefaultWeapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClass, Params);
 		PickupWeapon(DefaultWeapon);
 	}
-	
 }
 
-
-// Called every frame
 void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
-
-
 
 void UInventoryComponent::PickupWeapon(AWeaponBase* Weapon)
 {
-	if (!Weapon)
-	{
-		
-		return;
-	}
+	if (!Weapon || !OwnerCharacter) return;
 
 	Weapon->SetOwner(OwnerCharacter);
 
-	const EWeaponSlot Slot = (Weapon->GetWeaponType() == EWeaponType::Pistol) ? EWeaponSlot::Secondary :
-		(Weapon->GetWeaponType() == EWeaponType::Rifle) ? EWeaponSlot::Primary : EWeaponSlot::Throwable;
+	// ë¬´ê¸°ê°€ ìžê¸° ìŠ¬ë¡¯ì„ ì•Œê³  ìžˆë‹¤ (ì¸ë²¤í† ë¦¬ëŠ” ë¬´ê¸° íƒ€ìž… ë¶„ê¸° ì•ˆ í•¨, OCP)
+	const EWeaponSlot Slot = Weapon->GetPreferredSlot();
 
-
-	// ÇØ´ç ½½·Ô¿¡ ±âÁ¸ ¹«±â ÀÖÀ¸¸é Á¦°Å(µå·Ó ¶Ç´Â ÆÄ±«)
+	// í•´ë‹¹ ìŠ¬ë¡¯ì— ê¸°ì¡´ ë¬´ê¸° ìžˆìœ¼ë©´ ì œê±°
 	if (AWeaponBase** ExistingPtr = WeaponSlots.Find(Slot))
 	{
 		if (AWeaponBase* Existing = *ExistingPtr)
 		{
 			Existing->Unequip();
-			Existing->Destroy(); // ÇÊ¿äÇÏ¸é µå·Ó ·ÎÁ÷À¸·Î ±³Ã¼
+			Existing->Destroy();
 		}
 	}
 
 	WeaponSlots.Add(Slot, Weapon);
-
 	EquipSlot(Slot);
-
-	
 }
 
 void UInventoryComponent::DropWeapon()
 {
-	if (!EquippedWeapon) return;
+	if (!EquippedWeapon || !OwnerCharacter) return;
 
 	EquippedWeapon->Unequip();
-	FVector DropLocation = OwnerCharacter->GetActorLocation()
+	const FVector DropLocation = OwnerCharacter->GetActorLocation()
 		+ OwnerCharacter->GetActorForwardVector() * 100.f
 		+ FVector(0.f, 0.f, -50.f);
 	EquippedWeapon->SetActorLocation(DropLocation);
@@ -97,54 +72,37 @@ void UInventoryComponent::DropWeapon()
 void UInventoryComponent::EquipSlot(EWeaponSlot Slot)
 {
 	AWeaponBase** FoundPtr = WeaponSlots.Find(Slot);
-	if (!FoundPtr || !*FoundPtr)
-	{
-		
-		return;
-	}
+	if (!FoundPtr || !*FoundPtr || !OwnerCharacter) return;
 
-	
-
+	// ë“¤ê³  ìžˆë˜ ë¬´ê¸°ëŠ” í™€ìŠ¤í„° ì†Œì¼“ìœ¼ë¡œ
 	if (EquippedWeapon)
 	{
-		
-
-		FName* HolsterSocket = HolsterSocketMap.Find(CurrentSlot);
-		if (HolsterSocket)
+		if (FName* HolsterSocket = HolsterSocketMap.Find(CurrentSlot))
 		{
 			EquippedWeapon->AttachToComponent(OwnerCharacter->GetMesh(),
-				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-				*HolsterSocket);
-		}
-		else
-		{
-			
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale, *HolsterSocket);
 		}
 	}
-
 
 	EquippedWeapon = *FoundPtr;
+	CurrentSlot = Slot;
 
+	// êµì²´ ëª½íƒ€ì£¼: ë¬´ê¸°ì˜ AnimSet ì—ì„œ ê°€ì ¸ì˜¨ë‹¤. ì—†ìœ¼ë©´ ì¦‰ì‹œ ì™„ë£Œ.
 	bIsEquipping = true;
-
-	switch (Slot)
+	UAnimMontage* EquipMontage = EquippedWeapon->GetCharacterEquipMontage();
+	const float Len = MontageHelper::PlayWithEndCallback(
+		OwnerCharacter->GetMesh(), EquipMontage, this, &UInventoryComponent::OnEquipMontageEnded);
+	if (Len <= 0.f)
 	{
-		case EWeaponSlot::Primary:
-			OwnerCharacter->PlayEquipMontage(OwnerCharacter->RifleEquipMontage);
-			break;
-		case EWeaponSlot::Secondary:
-			OwnerCharacter->PlayEquipMontage(OwnerCharacter->PistolEquipMontage);
-			break;
-		case EWeaponSlot::Throwable:
-			break;
-		default:
-			break;
+		bIsEquipping = false;
 	}
-
-	
 
 	EquippedWeapon->Equip(OwnerCharacter);
 
-	CurrentSlot = Slot;
-	
+	OnWeaponEquipped.Broadcast(EquippedWeapon);
+}
+
+void UInventoryComponent::OnEquipMontageEnded(UAnimMontage* /*Montage*/, bool /*bInterrupted*/)
+{
+	bIsEquipping = false;
 }

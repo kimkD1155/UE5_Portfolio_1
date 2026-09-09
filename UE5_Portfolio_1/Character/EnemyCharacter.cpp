@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EnemyCharacter.h"
@@ -6,6 +6,8 @@
 #include "AIController.h"
 #include "../Core/EnemyAIController.h"
 #include "../Core/KangPlayerState.h"
+#include "../Component/HealthComponent.h"
+#include "../Animation/MontageHelper.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Animation/AnimMontage.h"
@@ -21,58 +23,66 @@ AEnemyCharacter::AEnemyCharacter()
 	AIControllerClass = AEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
 	AttackHitBox = CreateDefaultSubobject<USphereComponent>(TEXT("AttackHitBox"));
 	AttackHitBox->SetupAttachment(GetMesh(), FName("AttackHitBoxSocket"));
 	AttackHitBox->SetSphereRadius(50.f);
 	AttackHitBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackHitBoxOverlap);
-
 }
 
 // Called when the game starts or when spawned
 void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	CurrentHealth = MaxHealth;
-	OnTakeAnyDamage.AddDynamic(this, &AEnemyCharacter::TakeDamageHandler);
+
+	// ÏÑúÎ∏åÌÅ¥ÎûòÏä§ ÏÉùÏÑ±ÏûêÏóêÏÑú ÏÑ∏ÌåÖÌïú MaxHealth Î•º Ïª¥Ìè¨ÎÑåÌä∏Ïóê Î∞òÏòÅÌïú Îí§ Ïù¥Î≤§Ìä∏Î•º Íµ¨ÎèÖÌïúÎã§.
+	HealthComponent->SetMaxHealth(MaxHealth);
+	HealthComponent->OnHealthChanged.AddDynamic(this, &AEnemyCharacter::HandleHealthChanged);
+	HealthComponent->OnDeath.AddDynamic(this, &AEnemyCharacter::HandleDeath);
 }
 
 // Called every frame
 void AEnemyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 // Called to bind functionality to input
 void AEnemyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
-void AEnemyCharacter::TakeDamageHandler(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-	AController* InstigatedBy, AActor* DamageCauser)
+float AEnemyCharacter::GetCurrentHealth() const
 {
-	if (CurrentHealth <= 0.f) return;
+	return HealthComponent->GetHealth();
+}
 
-	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
-	
+bool AEnemyCharacter::IsDead() const
+{
+	return HealthComponent->IsDead();
+}
 
-	if (CurrentHealth <= 0.f)
+void AEnemyCharacter::HandleHealthChanged(float /*Health*/, float /*MaxHP*/, float Delta, AActor* /*DamageInstigator*/)
+{
+	// ÌîºÌï¥Î•º ÏûÖÏóàÍ≥† ÏïÑÏßÅ ÏÇ¥ÏïÑÏûàÏúºÎ©¥ ÌîºÍ≤© Î¶¨Ïï°ÏÖò
+	if (Delta < 0.f && !HealthComponent->IsDead())
 	{
-		Die();
-		return;
+		PlayHitReactionMontage(HitReactionMontage);
 	}
+}
 
-	PlayHitReactionMontage(HitReactionMontage);
+void AEnemyCharacter::HandleDeath(AActor* /*DamageInstigator*/)
+{
+	Die();
 }
 
 void AEnemyCharacter::Die()
 {
-	// «√∑π¿ÃæÓ ƒ⁄¿Œ ¡ˆ±ﬁ
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC)
+	// ÌîåÎ†àÏù¥Ïñ¥ÏóêÍ≤å ÏΩîÏù∏ Î≥¥ÏÉÅ
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{
 		if (AKangPlayerState* PS = PC->GetPlayerState<AKangPlayerState>())
 		{
@@ -85,11 +95,10 @@ void AEnemyCharacter::Die()
 		AC->UnPossess();
 	}
 	SetActorEnableCollision(false);
-	bIsDead = true;
 	PlayDieMontage(DieMontage);
 }
 
-AActor* AEnemyCharacter::GetTargetLocation() const
+AActor* AEnemyCharacter::GetTargetActor() const
 {
 	if (AAIController* AIC = Cast<AAIController>(GetController()))
 	{
@@ -103,36 +112,12 @@ AActor* AEnemyCharacter::GetTargetLocation() const
 
 void AEnemyCharacter::PlayDieMontage(UAnimMontage* MontageToPlay)
 {
-	if (!MontageToPlay) return;
-
-	PlayAnimMontage(MontageToPlay);
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		FOnMontageEnded EndDelegate;
-		EndDelegate.BindUObject(this, &AEnemyCharacter::OnDieMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
-	}
+	MontageHelper::PlayWithEndCallback(GetMesh(), MontageToPlay, this, &AEnemyCharacter::OnDieMontageEnded);
 }
 
 void AEnemyCharacter::PlayAttackMontage()
 {
-	if (!AttackMontage)
-	{
-		
-		return;
-	}
-	
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (!AnimInstance) return;
-
-	AnimInstance->Montage_Play(AttackMontage);
-
-	FOnMontageEnded EndDelegate; // ¿Ã∏ß ¿÷¥¬ ∫Øºˆ(lvalue)∑Œ ∏’¿˙ ª˝º∫
-	EndDelegate.BindUObject(this, &AEnemyCharacter::OnAttackMontageEndedInternal);
-
-	AnimInstance->Montage_SetEndDelegate(EndDelegate, AttackMontage);
+	MontageHelper::PlayWithEndCallback(GetMesh(), AttackMontage, this, &AEnemyCharacter::OnAttackMontageEndedInternal);
 }
 
 void AEnemyCharacter::EnableAttackHitBox()
@@ -162,45 +147,26 @@ void AEnemyCharacter::OnAttackHitBoxOverlap(UPrimitiveComponent* OverlappedComp,
 
 void AEnemyCharacter::OnAttackMontageEndedInternal(UAnimMontage* Montage, bool bInterrupted)
 {
-	
 	OnAttackMontageEnded.Broadcast();
 }
 
 
 void AEnemyCharacter::PlayHitReactionMontage(UAnimMontage* MontageToPlay)
 {
-	if (bIsPlayingHitReaction) return; // ¿Áª˝ ¡ﬂ¿Ã∏È ¬˜¥‹
+	if (bIsPlayingHitReaction || !MontageToPlay) return;
 
-	if (!MontageToPlay)
-	{
-		
-		return;
-	}
-	bIsPlayingHitReaction = true; // ¿Áª˝ Ω√¿€
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (!AnimInstance) return;
-
-	AnimInstance->Montage_Play(HitReactionMontage);
-
-	FOnMontageEnded EndDelegate; // ¿Ã∏ß ¿÷¥¬ ∫Øºˆ(lvalue)∑Œ ∏’¿˙ ª˝º∫
-	EndDelegate.BindUObject(this, &AEnemyCharacter::OnHitReactionMontageEnded);
-
-	AnimInstance->Montage_SetEndDelegate(EndDelegate, HitReactionMontage);
-
-
-	GetCharacterMovement()->MaxWalkSpeed = 0.f; // ¿Ãµø º”µµ∏¶ 0¿∏∑Œ º≥¡§«œø© ¿Ãµø¿ª ∏ÿ√„
+	bIsPlayingHitReaction = true;
+	MontageHelper::PlayWithEndCallback(GetMesh(), MontageToPlay, this, &AEnemyCharacter::OnHitReactionMontageEnded);
+	GetCharacterMovement()->MaxWalkSpeed = 0.f; // ÌîºÍ≤© Ï§ë Ïù¥Îèô Ï†ïÏßÄ
 }
 
 void AEnemyCharacter::OnDieMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	
 	Destroy();
 }
 
 void AEnemyCharacter::OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	
-	GetCharacterMovement()->MaxWalkSpeed = MoveSpeed; // ¿Ãµø º”µµ∏¶ ø¯∑°¥Î∑Œ ∫πø¯
-	bIsPlayingHitReaction = false; // ¿Áª˝ ¡æ∑·
+	GetCharacterMovement()->MaxWalkSpeed = MoveSpeed; // Ïù¥Îèô ÏÜçÎèÑ Î≥µÍµ¨
+	bIsPlayingHitReaction = false;
 }

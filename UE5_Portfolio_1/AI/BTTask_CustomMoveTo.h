@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,6 +19,6 @@ public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
 	float tolerance = 50.f;
-	// Ä¸½¶ µîÀÇ Å©±â·Î ÀÎÇØ °ø°İ»ç°Å¸®º¸´Ù ¸ñÇ¥·ÎºÎÅÍÀÇ Àû À§Ä¡°¡ Å©°Ô ³ª¿Í Çã¿ë ¿ÀÂ÷ ¹üÀ§¸¦ ¼³Á¤ÇÔ
+	// ìº¡ìŠ ë“±ì˜ í¬ê¸°ë¡œ ì¸í•´ ê³µê²©ì‚¬ê±°ë¦¬ë³´ë‹¤ ëª©í‘œë¡œë¶€í„°ì˜ ì  ìœ„ì¹˜ê°€ í¬ê²Œ ë‚˜ì™€ í—ˆìš© ì˜¤ì°¨ ë²”ìœ„ë¥¼ ì„¤ì •í•¨
 
 };

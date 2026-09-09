@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "AllyManager.h"
@@ -30,5 +30,5 @@ AAllySpawnPoint* UAllyManager::GetAvailableSpawnPoint()
             return SpawnPoints[Index];
         }
     }
-    return nullptr; // 5°³ ´Ù Âù »óÅÂ
+    return nullptr; // 5ê°œ ë‹¤ ì°¬ ìƒíƒœ
 }

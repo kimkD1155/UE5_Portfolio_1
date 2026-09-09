@@ -1,4 +1,4 @@
-#include "ShopWidget.h"
+﻿#include "ShopWidget.h"
 #include "../Props/Shop.h"
 #include "../Core/KangPlayerState.h"
 #include "../Component/InventoryComponent.h"
@@ -83,7 +83,7 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 			
 		}
 	}
-	/*else if (Item.ItemType == EShopItemType::Ally && Item.AllyClass )
+	else if (Item.ItemType == EShopItemType::Ally && Item.AllyClass )
 	{
 		UAllyManager* AllyManager = GetWorld()->GetSubsystem<UAllyManager>();
 		if (!AllyManager) return;
@@ -107,5 +107,5 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 			SpawnPoint->bIsOccupied = true;
 			UE_LOG(LogTemp, Warning, TEXT("Bought Ally: %s"), *Item.ItemName.ToString());
 		}
-	}*/
+	}
 }

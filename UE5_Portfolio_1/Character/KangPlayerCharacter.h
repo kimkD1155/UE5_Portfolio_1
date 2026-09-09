@@ -4,23 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "../Weapon/WeaponBase.h"          // EWeaponType
+#include "../Interface/WeaponHolder.h"
 #include "KangPlayerCharacter.generated.h"
 
-//�ѤѤѤѤѤѤ����� ����ѤѤѤѤѤ�
-// ������Ʈ
+// ─────────── 전방 선언 ───────────
 class UHUDComponent;
 class UInteractionComponent;
 class UInventoryComponent;
+class UHealthComponent;
+class UCombatComponent;
 
-class AWeaponBase;
 class ARangedWeapon;
 class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
 class UAnimMontage;
 struct FInputActionValue;
-
-DECLARE_DELEGATE_TwoParams(FOnMontageEnded, UAnimMontage*, bool /*bInterrupted*/);
 
 UENUM(BlueprintType)
 enum class ETurnDirection : uint8
@@ -31,31 +31,25 @@ enum class ETurnDirection : uint8
 };
 
 UCLASS()
-class UE5_PORTFOLIO_1_API AKangPlayerCharacter : public ACharacter
+class UE5_PORTFOLIO_1_API AKangPlayerCharacter : public ACharacter, public IWeaponHolder
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AKangPlayerCharacter();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
+public:
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// IWeaponHolder — 현재 장착 무기는 인벤토리 컴포넌트가 관리
+	virtual AWeaponBase* GetActiveWeapon() const override;
 
-
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-// Ű �Է� ����
+	//────────────────────────── 키 입력 관련 ──────────────────────────
 protected:
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -101,8 +95,8 @@ protected:
 
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void OnJumped_Implementation() override;
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-// ������Ʈ
+
+	//────────────────────────── 컴포넌트 ──────────────────────────
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UHUDComponent* HUDComponent;
@@ -110,21 +104,31 @@ protected:
 	UInteractionComponent* InteractionComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInventoryComponent* InventoryComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHealthComponent* HealthComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UCombatComponent* CombatComponent;
+
+	UFUNCTION()
+	void HandleDeath(AActor* DamageInstigator);
 
 public:
-	// ������Ʈ ������
+	// 컴포넌트 접근자
 	UFUNCTION(BlueprintPure, Category = "Components")
 	UHUDComponent* GetHUDComponent() const { return HUDComponent; }
 	UFUNCTION(BlueprintPure, Category = "Components")
 	UInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 	UFUNCTION(BlueprintPure, Category = "Components")
 	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-// ����
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UHealthComponent* GetHealthComponent() const { return HealthComponent; }
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UCombatComponent* GetCombatComponent() const { return CombatComponent; }
+
+	//────────────────────────── 상태 변수 ──────────────────────────
 public:
 	bool bIsAiming = false;
 	bool bIsFiring = false;
-	bool bIsEquipping = false;
 	bool Turn = false;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Turn")
@@ -134,7 +138,7 @@ public:
 	float AimYaw = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Aim")
-	float MovingSpeedThreshold = 10.f; // �� �̻��̸� "�̵� ��"���� ����
+	float MovingSpeedThreshold = 10.f; // 이 이상이면 "이동 중"으로 판정
 
 	bool bIsMoving = false;
 
@@ -148,18 +152,14 @@ public:
 	UFUNCTION(BlueprintPure)
 	bool CanTurn() const { return Turn; }
 
-	
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponType GetCurrentWeaponType() const;
 	UFUNCTION(BlueprintPure)
 	ETurnDirection GetTurnDirection() const { return TurnDirection; }
 	UFUNCTION(BlueprintPure)
 	ETurnDirection SetTurnDirection(ETurnDirection TD) { return TurnDirection = TD; }
-	UPROPERTY()
-	ARangedWeapon* ReloadingWeapon;
-	
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-// ī�޶�, FOV ó�� ( AIm )
+
+	//────────────────────────── 카메라 / FOV (조준) ──────────────────────────
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	USpringArmComponent* CameraBoom;
@@ -176,55 +176,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Aim")
 	float AimInterpSpeed = 10.f;
 
+	// 사격/재장전 몽타주 → UCombatComponent, 교체 몽타주 → UInventoryComponent 가 담당.
+	// 이 클래스는 더 이상 무기 몽타주를 직접 재생하지 않는다.
 
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-// ��Ÿ�� �� �ִϸ��̼� ����
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> PistolReloadMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> PistolFireMontage;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> PistolEquipMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> RifleReloadMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> RifleFireMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> RifleEquipMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> ShotgunReloadMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> ShotgunFireMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> ShotgunEquipMontage;
-
-	void PlayReloadMontage(UAnimMontage* MontageToPlay);
-	void PlayEquipMontage(UAnimMontage* MontageToPlay);
-
-	UFUNCTION()
-	void OnWeaponFired();
-
-
-
-public:
-	UFUNCTION()
-	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-	UFUNCTION()
-	void OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-
-//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-//IK ����
+	//────────────────────────── 왼손 IK ──────────────────────────
 public:
 	UPROPERTY(BlueprintReadWrite, Category = "IK")
 	FTransform LeftHandIKTarget;
@@ -233,6 +188,4 @@ public:
 	bool bShouldUseLeftHandIK = false;
 
 	void UpdateLeftHandIK();
-
-
 };

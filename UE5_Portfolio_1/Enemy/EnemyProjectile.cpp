@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EnemyProjectile.h"
@@ -24,11 +24,11 @@ AEnemyProjectile::AEnemyProjectile()
 	ProjectileMovement->InitialSpeed = 800.f;
 	ProjectileMovement->MaxSpeed = 800.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
-	ProjectileMovement->ProjectileGravityScale = 0.f; // Áß·Â ¾øÀ½
+	ProjectileMovement->ProjectileGravityScale = 0.f; // ì¤‘ë ¥ ì—†ìŒ
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(RootComponent);
-	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // Ãæµ¹Àº CollisionComp°¡ ´ã´ç
+	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // ì¶©ëŒì€ CollisionCompê°€ ë‹´ë‹¹
 
 	SetLifeSpan(LifeSpan);
 }

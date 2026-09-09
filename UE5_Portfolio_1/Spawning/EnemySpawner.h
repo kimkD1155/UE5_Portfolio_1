@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -18,7 +18,7 @@ struct FEnemySpawnInfo
 	TSubclassOf<ACharacter> EnemyClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float SpawnWeight = 1.0f; // °¡ÁßÄ¡ (³ôÀ»¼ö·Ï ´õ ÀÚÁÖ ½ºÆù)
+	float SpawnWeight = 1.0f; // ê°€ì¤‘ì¹˜ (ë†’ì„ìˆ˜ë¡ ë” ìì£¼ ìŠ¤í°)
 };
 
 UCLASS()
@@ -41,9 +41,10 @@ public:
 protected:
 
     void SpawnEnemy();
+    void OnEnemyDestroyed(AActor* DestroyedActor);
     void UpdateDifficulty();
-    TSubclassOf<ACharacter> SelectEnemyClass(); // °¡ÁßÄ¡ ±â¹İ ·£´ı ¼±ÅÃ
-    FVector GetRandomSpawnLocation(); // ¹Ú½º ³» ·£´ı À§Ä¡
+    TSubclassOf<ACharacter> SelectEnemyClass(); // ê°€ì¤‘ì¹˜ ê¸°ë°˜ ëœë¤ ì„ íƒ
+    FVector GetRandomSpawnLocation(); // ë°•ìŠ¤ ë‚´ ëœë¤ ìœ„ì¹˜
 
     UPROPERTY(VisibleAnywhere, Category = "Spawn")
     UBoxComponent* SpawnArea;
@@ -67,4 +68,8 @@ protected:
 
     FTimerHandle SpawnTimerHandle;
     FTimerHandle DifficultyTimerHandle;
+
+public:
+    UPROPERTY(VisibleAnywhere, Category = "Enemy")
+    int32 CurrentEnemyCount = 0;
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,8 +8,8 @@
 
 class USphereComponent;
 class UAnimMontage;
+class UHealthComponent;
 
-DECLARE_DELEGATE_TwoParams(FOnMontageEnded, UAnimMontage*, bool /*bInterrupted*/);
 DECLARE_MULTICAST_DELEGATE(FOnAttackMontageEnded);
 
 
@@ -26,7 +26,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -34,46 +34,48 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintPure)
-	float GetCurrentHealth() const { return CurrentHealth; }
+	float GetCurrentHealth() const;
 
 	UFUNCTION(BlueprintPure)
 	float GetAttackRange() const { return AttackRange; }
 
 	UFUNCTION(BlueprintPure)
-	bool IsDead() const { return bIsDead; }
+	bool IsDead() const;
 
 protected:
 
+	// 체력/사망은 HealthComponent 가 담당한다. 이 캐릭터는 결과 이벤트만 구독한다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHealthComponent* HealthComponent;
+
 	UFUNCTION()
-	void TakeDamageHandler(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
-		class AController* InstigatedBy, AActor* DamageCauser);
+	void HandleHealthChanged(float Health, float MaxHealth, float Delta, AActor* DamageInstigator);
+
+	UFUNCTION()
+	void HandleDeath(AActor* DamageInstigator);
 
 	virtual void Attack() {}
 
 	void Die();
 
-	AActor* GetTargetLocation() const;
+	// AActor::GetTargetLocation(AActor*) 와 이름이 겹치지 않도록 GetTargetActor 로 명명
+	AActor* GetTargetActor() const;
 
-	// �� �� ���� �� ������
+	// 이 좀비가 한 대 때릴 때의 데미지
 	UPROPERTY(EditAnywhere, Category = "Enemy")
 	float AttackDamage = 30.f;
 
+	// 서브클래스 생성자에서 HealthComponent 에 넣어줄 최대 체력
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	float MaxHealth = 40.f;
-
-	UPROPERTY(VisibleAnywhere, Category = "Enemy")
-	float CurrentHealth;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	int32 CoinReward = 10;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
-	bool bIsDead = false;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	float MoveSpeed = 100.f;
 
-	// ������ Distance�� �ּ� 188 ���� �ǹǷ�, �ڽ� Enemy���� �� �̻����� �ؾ� ��
+	// 언리얼 기본 Distance 가 최소 188 정도 되므로, 자식 Enemy 에서 그 이상으로 해야 함
 	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
 	float AttackRange = 100.f;
 
@@ -82,8 +84,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	USphereComponent* AttackHitBox;
-	//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
-	// ��Ÿ�� �� �ִϸ��̼� ����
+
+	//────────────────────────────────────────────
+	// 몽타주 및 애니메이션 관련
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TObjectPtr<UAnimMontage> DieMontage;
@@ -103,7 +106,7 @@ public:
 
 	FOnAttackMontageEnded OnAttackMontageEnded;
 
-	// AnimNotify���� ȣ��
+	// AnimNotify 에서 호출
 	void EnableAttackHitBox();
 	void DisableAttackHitBox();
 
@@ -116,6 +119,4 @@ private:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void OnAttackMontageEndedInternal(UAnimMontage* Montage, bool bInterrupted);
-
-	//�ѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤѤ�
 };

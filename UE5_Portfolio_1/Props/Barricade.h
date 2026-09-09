@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -9,6 +9,7 @@
 
 class UStaticMeshComponent;
 class UBoxComponent;
+class UHealthComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHPChanged, float, CurrentHP, float, MaxHP);
 
@@ -16,8 +17,8 @@ UCLASS()
 class UE5_PORTFOLIO_1_API ABarricade : public AActor, public IInteractableInterface
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	ABarricade();
 
@@ -25,7 +26,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -35,27 +36,29 @@ public:
 	virtual void Interact_Implementation(ACharacter* Interactor) override;
 	virtual FText GetInteractHintText_Implementation() override;
 
+	// 기존 위젯/HUD 가 구독하는 델리게이트. HealthComponent 이벤트를 이 시그니처로 중계한다.
 	UPROPERTY(BlueprintAssignable, Category = "Barricade")
 	FOnHPChanged OnHPChanged;
 
 	UFUNCTION(BlueprintPure, Category = "Barricade")
-	float GetCurrentHealth() const { return CurrentHealth; }
+	float GetCurrentHealth() const;
 
 	UFUNCTION(BlueprintPure, Category = "Barricade")
-	float GetMaxHealth() const { return MaxHealth; }
+	float GetMaxHealth() const;
 
 	UFUNCTION(BlueprintPure, Category = "Barricade")
-	bool IsDestroyed() const { return CurrentHealth <= 0.f; }
+	bool IsDestroyed() const;
 
 	UFUNCTION(BlueprintPure, Category = "Barricade")
-	bool IsFullHealth() const { return CurrentHealth >= MaxHealth; }
+	bool IsFullHealth() const;
 
 protected:
 	UFUNCTION()
-	virtual void TakeDamageHandler(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
-		class AController* InstigatedBy, AActor* DamageCauser);
+	void HandleHealthChanged(float Health, float MaxHealth, float Delta, AActor* DamageInstigator);
 
-	void Repair(float RepairAmount);
+	UFUNCTION()
+	void HandleDeath(AActor* DamageInstigator);
+
 	void OnBarricadeDestroyed();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -64,13 +67,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UBoxComponent* BlockingVolume;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barricade")
-	float MaxHealth = 90.f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHealthComponent* HealthComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Barricade")
-	float CurrentHealth;
-
-	// EŰ �� ���� ȸ���Ǵ� �� (���� �� �� �з�)
+	// E 키로 한 번 상호작용 시 회복되는 양
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barricade")
 	float RepairAmountPerInteract = 50.f;
 };

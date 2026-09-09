@@ -1,10 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "../Weapon/WeaponBase.h"
+#include "../Ally/AllyBase.h"
 #include "ShopItemData.generated.h"
+
 
 UENUM(BlueprintType)
 enum class EShopItemType : uint8
@@ -31,6 +33,6 @@ struct FShopItemData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<AWeaponBase> WeaponClass;
 
-	/*UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<AAllyBase> AllyClass;*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<AAllyBase> AllyClass;
 };

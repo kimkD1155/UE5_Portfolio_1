@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,7 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "../Interface/InteractableInterface.h"
 #include "GameFramework/Character.h"
-// OwnerCharacter->GetController() °°Àº ¸â¹öÇÔ¼ö¸¦ È£ÃâÇÏ·Á¸é ¹İµå½Ã ¿ÏÀüÇÑ Å¸ÀÔ Á¤ÀÇ°¡ ÇÊ¿ä
+// OwnerCharacter->GetController() ê°™ì€ ë©¤ë²„í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•˜ë ¤ë©´ ë°˜ë“œì‹œ ì™„ì „í•œ íƒ€ì… ì •ì˜ê°€ í•„ìš”
+#include "WeaponAnimSet.h"
+#include "WeaponSlot.h"
 #include "WeaponBase.generated.h"
 
 class USkeletalMeshComponent;
@@ -19,8 +21,7 @@ enum class EWeaponType : uint8
 {
 	None,
 	Pistol,
-	Rifle,
-	Melee
+	Rifle
 };
 
 
@@ -42,13 +43,13 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	// ¼ÒÀ¯ Ä³¸¯ÅÍ
+	// ì†Œìœ  ìºë¦­í„°
 	UPROPERTY()
 	ACharacter* OwnerCharacter;
 
 protected:
 
-	// ÄÄÆ÷³ÍÆ®
+	// ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USkeletalMeshComponent* WeaponMesh;
 
@@ -59,6 +60,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	EWeaponType WeaponType = EWeaponType::None;
 
+	// ì´ ë¬´ê¸°ê°€ ë“¤ì–´ê°ˆ ì¸ë²¤í† ë¦¬ ìŠ¬ë¡¯. ì¸ë²¤í† ë¦¬ê°€ ë¬´ê¸° íƒ€ì…ì„ ë¶„ê¸°í•˜ì§€ ì•Šë„ë¡ ë¬´ê¸°ê°€ ì§ì ‘ ëª…ì‹œ.
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	EWeaponSlot PreferredSlot = EWeaponSlot::Primary;
+
+	UFUNCTION(BlueprintPure)
+	EWeaponSlot GetPreferredSlot() const { return PreferredSlot; }
+
 
 
 protected:
@@ -66,7 +74,7 @@ protected:
 	FText WeaponName = FText::FromString(TEXT("Unknown"));
 
 public:
-	// ¦¡¦¡ ÀåÂø / ÇØÁ¦ ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+	// â”€â”€ ì¥ì°© / í•´ì œ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	void Equip(ACharacter* NewOwner);
 	void Unequip();
 
@@ -76,7 +84,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FName GripSocketName = "Hand_r_socket";
 
-	// ¦¡¦¡ ÀÚ½Ä Å¬·¡½º¿¡¼­ override ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+	// â”€â”€ ìì‹ í´ë˜ìŠ¤ì—ì„œ override â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	// IInteractableInterface
 	virtual void Interact_Implementation(ACharacter* Interactor);
 	virtual FText GetInteractHintText_Implementation();
@@ -96,11 +104,26 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	USoundBase* FireSound;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	// â”€â”€ ë¬´ê¸° ë©”ì‹œ(1ì¸ì¹­ ì´ê¸° ì• ë‹˜)ì—ì„œ ì¬ìƒë˜ëŠ” ëª½íƒ€ì£¼ â”€â”€
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Weapon")
 	UAnimMontage* FireMontage;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Weapon")
 	UAnimMontage* ReloadMontage;
+
+	// â”€â”€ ì†Œìœ  ìºë¦­í„° ìŠ¤ì¼ˆë ˆí†¤ì—ì„œ ì¬ìƒë˜ëŠ” ëª½íƒ€ì£¼ ì„¸íŠ¸ (ë¬´ê¸°ë³„ DataAsset) â”€â”€
+	// ìºë¦­í„°ê°€ switch(EWeaponType) ë¡œ ê³ ë¥´ë˜ ë¡œì§ì„ ë°ì´í„°ë¡œ ë¶„ë¦¬ (OCP).
+	UPROPERTY(EditDefaultsOnly, Category = "Animation|Character")
+	TObjectPtr<UWeaponAnimSet> CharacterAnimSet;
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	UAnimMontage* GetCharacterFireMontage() const { return CharacterAnimSet ? CharacterAnimSet->FireMontage : nullptr; }
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	UAnimMontage* GetCharacterReloadMontage() const { return CharacterAnimSet ? CharacterAnimSet->ReloadMontage : nullptr; }
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	UAnimMontage* GetCharacterEquipMontage() const { return CharacterAnimSet ? CharacterAnimSet->EquipMontage : nullptr; }
 
 	void PlayFireSound();
 	void PlayFireMontage();

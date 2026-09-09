@@ -4,67 +4,76 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "../Interface/WeaponHolder.h"
 #include "AllyBase.generated.h"
 
 class AWeaponBase;
 class USphereComponent;
-class ARangedWeapon;
+class UHealthComponent;
+class UCombatComponent;
 
 UCLASS()
-class UE5_PORTFOLIO_1_API AAllyBase : public ACharacter
+class UE5_PORTFOLIO_1_API AAllyBase : public ACharacter, public IWeaponHolder
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AAllyBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
+public:
 	virtual void Tick(float DeltaTime) override;
 
+	// IWeaponHolder
+	virtual AWeaponBase* GetActiveWeapon() const override { return EquippedWeapon; }
 
-//Àû °¨Áö °ü·Ã
+	//â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ì»´í¬ë„ŒíŠ¸ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 protected:
-	// Àû °¨Áö¿ë ±¸Ã¼ Äİ¸®Àü (ÀÌ ¹üÀ§ ¾È¿¡ µé¾î¿Â Àû¸¸ Å¸°ÙÆÃ ´ë»ó)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHealthComponent* HealthComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UCombatComponent* CombatComponent;
+
+	UFUNCTION()
+	void HandleDeath(AActor* DamageInstigator);
+
+	//â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ì  ê°ì§€ ê´€ë ¨ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+protected:
+	// ì  ê°ì§€ìš© êµ¬ì²´ ì½œë¦¬ì „ (ì´ ë²”ìœ„ ì•ˆì— ë“¤ì–´ì˜¨ ì ë§Œ íƒ€ê²ŸíŒ… ëŒ€ìƒ)
 	UPROPERTY(EditDefaultsOnly)
 	USphereComponent* AttackRangeSphere;
-	// °¨Áö ¹İ°æ
+	// ê°ì§€ ë°˜ê²½
 	UPROPERTY(EditDefaultsOnly)
 	float AttackRange{ 800.f };
-	// ÇöÀç ¹üÀ§ ¾È¿¡ µé¾î¿Í ÀÖ´Â Àû ¸ñ·Ï
+	// í˜„ì¬ ë²”ìœ„ ì•ˆì— ë“¤ì–´ì™€ ìˆëŠ” ì  ëª©ë¡
 	UPROPERTY()
 	TArray<AActor*> EnemiesInRange;
-	// ÇöÀç °ø°İ ´ë»óÀ¸·Î ¼±ÅÃµÈ Àû
+	// í˜„ì¬ ê³µê²© ëŒ€ìƒìœ¼ë¡œ ì„ íƒëœ ì 
 	UPROPERTY()
 	AActor* CurrentTarget;
 
-	AActor* FindTarget(); // Áö±İÀº °¡Àå °¡±î¿î Àû¸¸
+	AActor* FindTarget(); // ì§€ê¸ˆì€ ê°€ì¥ ê°€ê¹Œìš´ ì ë§Œ
 
-	// ÀûÀÌ AttackRangeSphere ¾ÈÀ¸·Î µé¾î¿ÔÀ» ¶§ È£Ãâ
 	UFUNCTION()
 	void OnEnemyEnterRange(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	// ÀûÀÌ AttackRangeSphere ¹ÛÀ¸·Î ³ª°¬À» ¶§ È£Ãâ
 	UFUNCTION()
 	void OnEnemyExitRange(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-//¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ
-//ÀüÅõ
+	//â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ì „íˆ¬ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Defaults")
 	TSubclassOf<AWeaponBase> DefaultWeaponClass;
-	// ÀåÂøµÈ ¹«±â (»ç°İ ½Ã Ä³½ºÆÃÇØ¼­ »ç¿ë)
+	// ì¥ì°©ëœ ë¬´ê¸°
 	UPROPERTY()
 	AWeaponBase* EquippedWeapon;
 	void EquipDefaultWeapon();
 
-	void Attack();
+	void Attack(); // AttackTimer ë¡œ ì£¼ê¸° í˜¸ì¶œ
 
 	UPROPERTY()
 	FTimerHandle AttackTimerHandle;
@@ -72,25 +81,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Attack")
 	float AttackInterval = 1.f;
 
-
-	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	UAnimMontage* PistolReloadMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	UAnimMontage* RifleReloadMontage;
-
-	// ÇöÀç ¸®·Îµå ÁßÀÎ ¹«±â (¿Ï·á ½ÃÁ¡¿¡ ReloadFinished() È£Ãâ ´ë»ó)
-	UPROPERTY()
-	ARangedWeapon* ReloadingWeapon;
-
-	void Reload();
-	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-
-//¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ
-//µğ¹ö±×
+	//â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ë””ë²„ê·¸ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 protected:
-	// µğ¹ö±× ½Ã°¢È­ ¿©ºÎ (¿¡µğÅÍ¿¡¼­ ²ô°í ÄÓ ¼ö ÀÖ°Ô)
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	bool bShowAttackRangeDebug = true;
-
 };

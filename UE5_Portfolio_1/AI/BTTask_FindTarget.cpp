@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BTTask_FindTarget.h"
@@ -28,7 +28,7 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), TargetTag, FoundActors);
 	if (FoundActors.Num() == 0) return EBTNodeResult::Failed;
 
-	// °¡Àå °¡±î¿î ¹æ¾îº® Ã£±â
+	// ê°€ìž¥ ê°€ê¹Œìš´ ë°©ì–´ë²½ ì°¾ê¸°
 	AActor* ClosestWall = nullptr;
 	float ClosestDist = TNumericLimits<float>::Max();
 	const FVector MyLocation = AIC->GetPawn()->GetActorLocation();
@@ -48,10 +48,10 @@ EBTNodeResult::Type UBTTask_FindTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	OwnerComp.GetBlackboardComponent()->SetValueAsObject(TargetActorKey.SelectedKeyName, ClosestWall);
 
-	// ¹Ù¸®ÄÉÀÌµå ¹Ù¿îµù ¹Ú½º ±âÁØ °¡Àå °¡±î¿î Á¡ °è»ê
+	// ë°”ë¦¬ì¼€ì´ë“œ ë°”ìš´ë”© ë°•ìŠ¤ ê¸°ì¤€ ê°€ìž¥ ê°€ê¹Œìš´ ì  ê³„ì‚°
 	FBox BoundingBox = ClosestWall->GetComponentsBoundingBox();
 	FVector ClosestPoint = BoundingBox.GetClosestPointTo(MyLocation);
-	ClosestPoint.Z = MyLocation.Z; // ZÃà °íÁ¤
+	ClosestPoint.Z = MyLocation.Z; // Zì¶• ê³ ì •
 
 	OwnerComp.GetBlackboardComponent()->SetValueAsVector(TargetLocationKey.SelectedKeyName, ClosestPoint);
 

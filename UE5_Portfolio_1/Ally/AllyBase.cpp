@@ -4,120 +4,109 @@
 #include "AllyBase.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 
-// Ä¿½ºÅÒ
+// ì»¤ìŠ¤í…€
 #include "../Character/EnemyCharacter.h"
 #include "../Weapon/WeaponBase.h"
 #include "../Weapon/RangedWeapon.h"
+#include "../Component/HealthComponent.h"
+#include "../Component/CombatComponent.h"
 
-// Sets default values
 AAllyBase::AAllyBase()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+
 	AttackRangeSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AttackRangeSphere"));
-	AttackRangeSphere->SetupAttachment(GetCapsuleComponent()); // RootComponent ¡æ Ä¸½¶
+	AttackRangeSphere->SetupAttachment(GetCapsuleComponent());
 	AttackRangeSphere->SetSphereRadius(AttackRange);
 
-	// ¹°¸® Ãæµ¹Àº ¾ø°í ¿À¹ö·¦ °¨Áö¸¸ ÇÊ¿äÇÏ¹Ç·Î QueryOnly
+	// ë¬¼ë¦¬ ì¶©ëŒì€ ì—†ê³  ì˜¤ë²„ë© ê°ì§€ë§Œ í•„ìš”í•˜ë¯€ë¡œ QueryOnly
 	AttackRangeSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
-	// ±âº»Àº ÀüºÎ ¹«½Ã, Pawn Ã¤³Î¸¸ ¿À¹ö·¦ (Á»ºñ´Â PawnÀÌ¹Ç·Î)
 	AttackRangeSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	AttackRangeSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    AttackRangeSphere->SetGenerateOverlapEvents(true);
+	AttackRangeSphere->SetGenerateOverlapEvents(true);
 
 	AttackRangeSphere->OnComponentBeginOverlap.AddDynamic(this, &AAllyBase::OnEnemyEnterRange);
 	AttackRangeSphere->OnComponentEndOverlap.AddDynamic(this, &AAllyBase::OnEnemyExitRange);
 }
 
-// Called when the game starts or when spawned
 void AAllyBase::BeginPlay()
 {
 	Super::BeginPlay();
-    EquipDefaultWeapon();
+	EquipDefaultWeapon();
+
+	HealthComponent->OnDeath.AddDynamic(this, &AAllyBase::HandleDeath);
 }
 
-// Called every frame
 void AAllyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 #if WITH_EDITOR
-    if (bShowAttackRangeDebug)
-    {
-        // ¹üÀ§ ¾È¿¡ ÀûÀÌ ÀÖÀ¸¸é »¡°­, ¾øÀ¸¸é ÃÊ·Ï
-        FColor RangeColor = (EnemiesInRange.Num() > 0) ? FColor::Red : FColor::Green;
+	if (bShowAttackRangeDebug)
+	{
+		const FColor RangeColor = (EnemiesInRange.Num() > 0) ? FColor::Red : FColor::Green;
+		DrawDebugSphere(GetWorld(), GetActorLocation(), AttackRange, 32, RangeColor, false, -1.f, 0, 2.f);
 
-        DrawDebugSphere(
-            GetWorld(),
-            GetActorLocation(),
-            AttackRange,
-            32, // ¼¼±×¸ÕÆ® ¼ö (ºÎµå·¯¿ò Á¤µµ)
-            RangeColor,
-            false, // Áö¼Ó Ç¥½Ã ¾Æ´Ô
-            -1.f,  // Áö¼Ó½Ã°£ -1 = ¸Å ÇÁ·¹ÀÓ »õ·Î ±×¸² (Tick¿¡¼­ °è¼Ó È£ÃâÇÏ¹Ç·Î)
-            0,
-            2.f    // ¼± µÎ²²
-        );
+		for (AActor* Enemy : EnemiesInRange)
+		{
+			if (IsValid(Enemy))
+			{
+				DrawDebugSphere(GetWorld(), Enemy->GetActorLocation(), 50.f, 12, FColor::Yellow, false, -1.f, 0, 1.5f);
+			}
+		}
 
-        // °¨ÁöµÈ Àû¸¶´Ù ³ë¶õ ±¸Ã¼ Ç¥½Ã
-        for (AActor* Enemy : EnemiesInRange)
-        {
-            if (IsValid(Enemy))
-            {
-                DrawDebugSphere(
-                    GetWorld(),
-                    Enemy->GetActorLocation(),
-                    50.f,
-                    12,
-                    FColor::Yellow,
-                    false,
-                    -1.f,
-                    0,
-                    1.5f
-                );
-            }
-        }
-
-        // ÇöÀç Å¸°ÙÀÌ ÀÖÀ¸¸é ¶óÀÎÀ¸·Î ¿¬°áÇØ¼­ Ç¥½Ã
-        if (IsValid(CurrentTarget))
-        {
-            DrawDebugLine(
-                GetWorld(),
-                GetActorLocation(),
-                CurrentTarget->GetActorLocation(),
-                FColor::Orange,
-                false,
-                -1.f,
-                0,
-                2.f
-            );
-        }
-    }
+		if (IsValid(CurrentTarget))
+		{
+			DrawDebugLine(GetWorld(), GetActorLocation(), CurrentTarget->GetActorLocation(),
+				FColor::Orange, false, -1.f, 0, 2.f);
+		}
+	}
 #endif
 }
 
+void AAllyBase::HandleDeath(AActor* /*DamageInstigator*/)
+{
+	GetWorldTimerManager().ClearTimer(AttackTimerHandle);
+	CombatComponent->StopFire();
+	EnemiesInRange.Empty();
+	CurrentTarget = nullptr;
 
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Unequip();
+		EquippedWeapon = nullptr;
+	}
+
+	SetActorEnableCollision(false);
+	if (AController* AC = GetController())
+	{
+		AC->UnPossess();
+	}
+	SetLifeSpan(3.f);
+}
 
 AActor* AAllyBase::FindTarget()
 {
-	// Á×¾ú°Å³ª ÆÄ±«µÈ Àû(Æ÷ÀÎÅÍ´Â ³²¾ÆÀÖÁö¸¸ IsValid ½ÇÆĞ)À» ¸ñ·Ï¿¡¼­ Á¤¸®
+	// ì£½ì—ˆê±°ë‚˜ íŒŒê´´ëœ ì ì„ ëª©ë¡ì—ì„œ ì •ë¦¬
 	EnemiesInRange.RemoveAll([](AActor* A) { return !IsValid(A); });
 
 	if (EnemiesInRange.Num() == 0) return nullptr;
 
-	// °Å¸® Á¦°ö ºñ±³·Î °¡Àå °¡±î¿î Àû Å½»ö (Á¦°ö±Ù ¿¬»ê »ı·«ÇØ¼­ ºñ¿ë Àı°¨)
+	// ê±°ë¦¬ ì œê³± ë¹„êµë¡œ ê°€ì¥ ê°€ê¹Œìš´ ì  íƒìƒ‰
 	AActor* Closest = nullptr;
 	float MinDist = TNumericLimits<float>::Max();
 
 	for (AActor* Enemy : EnemiesInRange)
 	{
-		float Dist = FVector::DistSquared(GetActorLocation(), Enemy->GetActorLocation());
+		const float Dist = FVector::DistSquared(GetActorLocation(), Enemy->GetActorLocation());
 		if (Dist < MinDist)
 		{
 			MinDist = Dist;
@@ -129,132 +118,72 @@ AActor* AAllyBase::FindTarget()
 
 void AAllyBase::OnEnemyEnterRange(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// Á»ºñÀÎÁö È®ÀÎ ÈÄ¿¡¸¸ ¸®½ºÆ®¿¡ Ãß°¡ (´Ù¸¥ Pawn ¿À¹ö·¦ ¹æÁö)
+	// ì¢€ë¹„ì¸ì§€ í™•ì¸ í›„ì—ë§Œ ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€ (ë‹¤ë¥¸ Pawn ì˜¤ë²„ë© ë°©ì§€)
 	if (Cast<AEnemyCharacter>(OtherActor))
 	{
-        UE_LOG(LogTemp, Warning, TEXT("EnemyEnter"));
 		EnemiesInRange.AddUnique(OtherActor);
 
-        // Ã¹ Àû °¨Áö ½Ã °ø°İ Å¸ÀÌ¸Ó ½ÃÀÛ
-        if (!GetWorldTimerManager().IsTimerActive(AttackTimerHandle))
-        {
-            GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AAllyBase::Attack, AttackInterval, true);
-        }
+		// ì²« ì  ê°ì§€ ì‹œ ê³µê²© íƒ€ì´ë¨¸ ì‹œì‘
+		if (!GetWorldTimerManager().IsTimerActive(AttackTimerHandle))
+		{
+			GetWorldTimerManager().SetTimer(AttackTimerHandle, this, &AAllyBase::Attack, AttackInterval, true);
+		}
 	}
 }
 
 void AAllyBase::OnEnemyExitRange(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	// ¹üÀ§ ¹ş¾î³­ ÀûÀº ¸ñ·Ï¿¡¼­ Á¦°Å
 	EnemiesInRange.Remove(OtherActor);
 
-	// ¹ş¾î³­ ÀûÀÌ ÇöÀç Å¸°ÙÀÌ¾ú´Ù¸é Å¸°Ùµµ ºñ¿öÁÜ (´ÙÀ½ Attack¿¡¼­ ÀçÅ½»öÇÏµµ·Ï)
 	if (CurrentTarget == OtherActor)
 	{
 		CurrentTarget = nullptr;
 	}
 
-    // ÀûÀÌ ´Ù »ç¶óÁö¸é Å¸ÀÌ¸Ó Á¤Áö (ºÒÇÊ¿äÇÑ È£Ãâ ¹æÁö)
-    if (EnemiesInRange.Num() == 0)
-    {
-        GetWorldTimerManager().ClearTimer(AttackTimerHandle);
-    }
+	// ì ì´ ë‹¤ ì‚¬ë¼ì§€ë©´ íƒ€ì´ë¨¸ ì •ì§€
+	if (EnemiesInRange.Num() == 0)
+	{
+		GetWorldTimerManager().ClearTimer(AttackTimerHandle);
+	}
 }
-
 
 void AAllyBase::EquipDefaultWeapon()
 {
-    if (!DefaultWeaponClass)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("AllyBase: DefaultWeaponClass not set"));
-        return;
-    }
+	if (!DefaultWeaponClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AllyBase: DefaultWeaponClass not set"));
+		return;
+	}
 
-    // ¹«±â ½ºÆù (À§Ä¡´Â Equip()¿¡¼­ ¼ÒÄÏ ±âÁØÀ¸·Î ÀçÁ¶Á¤µÇ¹Ç·Î ÀÓ½Ã À§Ä¡·Î ½ºÆù)
-    AWeaponBase* Weapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClass);
-    if (!Weapon)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("AllyBase: Failed to spawn weapon"));
-        return;
-    }
+	// ë¬´ê¸° ìŠ¤í° (ìœ„ì¹˜ëŠ” Equip()ì—ì„œ ì†Œì¼“ ê¸°ì¤€ìœ¼ë¡œ ì¬ì¡°ì •ë¨)
+	AWeaponBase* Weapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClass);
+	if (!Weapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AllyBase: Failed to spawn weapon"));
+		return;
+	}
 
-    // WeaponBase::Equip()ÀÌ ¿À³Ê ¼³Á¤ + ¼ÒÄÏ Attach¸¦ ÀüºÎ Ã³¸®ÇÔ
-    Weapon->Equip(this);
-    EquippedWeapon = Weapon;
+	Weapon->Equip(this);
+	EquippedWeapon = Weapon;
 }
 
 void AAllyBase::Attack()
 {
-    CurrentTarget = FindTarget();
-    if (!IsValid(CurrentTarget) || !EquippedWeapon) return;
+	CurrentTarget = FindTarget();
+	if (!IsValid(CurrentTarget) || !EquippedWeapon) return;
 
-    ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+	if (CombatComponent->IsReloading()) return;
 
-    if (RangedWeapon && RangedWeapon->GetGunState() == EGunState::Reloading) return;
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+	if (RangedWeapon && RangedWeapon->GetCurrentAmmo() <= 0)
+	{
+		CombatComponent->Reload();
+		return;
+	}
 
-    if (RangedWeapon && RangedWeapon->GetCurrentAmmo() <= 0)
-    {
-        Reload();
-        return;
-    }
+	FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
+	Direction.Z = 0.f;
+	SetActorRotation(Direction.Rotation());
 
-    FVector Direction = CurrentTarget->GetActorLocation() - GetActorLocation();
-    Direction.Z = 0.f;
-    SetActorRotation(Direction.Rotation());
-
-    EquippedWeapon->StartFire();
-}
-
-void AAllyBase::Reload()
-{
-    ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
-    if (!RangedWeapon || !RangedWeapon->CanReload()) return;
-
-    // ¹«±â Å¸ÀÔ¿¡ ¸Â´Â ¸ùÅ¸ÁÖ ¼±ÅÃ
-    UAnimMontage* MontageToPlay = nullptr;
-    switch (RangedWeapon->GetWeaponType())
-    {
-    case EWeaponType::Pistol: MontageToPlay = PistolReloadMontage; break;
-    case EWeaponType::Rifle:  MontageToPlay = RifleReloadMontage; break;
-    default:
-        UE_LOG(LogTemp, Warning, TEXT("AllyBase: Reload not implemented for this weapon type"));
-        return;
-    }
-
-    if (!MontageToPlay)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("AllyBase: Reload montage not set"));
-        return;
-    }
-
-    // ¹«±â ÂÊ »óÅÂ¸¦ ReloadingÀ¸·Î ÀüÈ¯ (Åº¾à ·ÎÁ÷Àº ReloadFinished¿¡¼­ Ã³¸®µÊ)
-    RangedWeapon->Reload();
-    ReloadingWeapon = RangedWeapon;
-
-    PlayAnimMontage(MontageToPlay);
-
-    // ¸ùÅ¸ÁÖ Á¾·á ½ÃÁ¡¿¡ Äİ¹é ¿¬°á (AnimNotify ´ë½Å ¸ùÅ¸ÁÖ ÀÚÃ¼ÀÇ Á¾·á µ¨¸®°ÔÀÌÆ® »ç¿ë)
-    if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-    {
-        FOnMontageEnded EndDelegate;
-        EndDelegate.BindUObject(this, &AAllyBase::OnReloadMontageEnded);
-        AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
-    }
-}
-
-void AAllyBase::OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-    if (ReloadingWeapon)
-    {
-        // Á¤»ó Á¾·á ½Ã¿¡¸¸ Åº¾à Ã¤¿ò, Áß´ÜµÇ¸é »óÅÂ¸¸ Idle·Î º¹±¸
-        if (!bInterrupted)
-        {
-            ReloadingWeapon->ReloadFinished();
-        }
-        else
-        {
-            ReloadingWeapon->SetGunState(EGunState::Idle);
-        }
-        ReloadingWeapon = nullptr;
-    }
+	CombatComponent->FireOnce();
 }

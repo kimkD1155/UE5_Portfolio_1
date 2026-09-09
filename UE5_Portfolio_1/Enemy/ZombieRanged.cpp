@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "ZombieRanged.h"
@@ -39,7 +39,7 @@ void AZombieRanged::SpawnProjectile()
 	{
 		Projectile->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, ProjectileSpawnSocket);
 		Projectile->CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Projectile->ProjectileMovement->Deactivate(); // ¾ÆÁ÷ ¾È ³¯¾Æ°¨
+		Projectile->ProjectileMovement->Deactivate(); // ì•„ì§ ì•ˆ ë‚ ì•„ê°
 
 		HeldProjectile = Projectile;
 	}
@@ -53,13 +53,13 @@ void AZombieRanged::ShootProjectile()
 
 	Projectile->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	Projectile->CollisionComp->IgnoreActorWhenMoving(this, true);
-	Projectile->ProjectileMovement->ProjectileGravityScale = 0.2f; // Áß·Â ¾øÀ½
+	Projectile->ProjectileMovement->ProjectileGravityScale = 0.2f; // ì¤‘ë ¥ ì—†ìŒ
 	Projectile->CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 	FVector SpawnLocation = Projectile->GetActorLocation();
 	FVector TargetLocation;
 
-	if (AActor* Target = /* Blackboard TargetActor °¡Á®¿À´Â ¹æ½Ä´ë·Î */ nullptr)
+	if (AActor* Target = /* Blackboard TargetActor ê°€ì ¸ì˜¤ëŠ” ë°©ì‹ëŒ€ë¡œ */ nullptr)
 	{
 		TargetLocation = Target->GetActorLocation();
 	}

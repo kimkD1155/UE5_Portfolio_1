@@ -1,10 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Barricade.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
+#include "../Component/HealthComponent.h"
 
 // Sets default values
 ABarricade::ABarricade()
@@ -22,16 +23,17 @@ ABarricade::ABarricade()
 	BlockingVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	BlockingVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 
-	
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	HealthComponent->SetMaxHealth(90.f);
 }
 
 // Called when the game starts or when spawned
 void ABarricade::BeginPlay()
 {
 	Super::BeginPlay();
-	OnTakeAnyDamage.AddDynamic(this, &ABarricade::TakeDamageHandler);
 
-	CurrentHealth = MaxHealth;
+	HealthComponent->OnHealthChanged.AddDynamic(this, &ABarricade::HandleHealthChanged);
+	HealthComponent->OnDeath.AddDynamic(this, &ABarricade::HandleDeath);
 }
 
 // Called every frame
@@ -40,60 +42,52 @@ void ABarricade::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ABarricade::TakeDamageHandler(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-	AController* InstigatedBy, AActor* DamageCauser)
+float ABarricade::GetCurrentHealth() const
 {
-	/*UE_LOG(LogTemp, Warning, TEXT("TakeDamageHandler called: %.1f"), Damage);*/
-
-	if (IsDestroyed())
-	{
-		return;
-	}
-
-	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
-	OnHPChanged.Broadcast(CurrentHealth, MaxHealth); 
-
-	if (IsDestroyed())
-	{
-		OnBarricadeDestroyed();
-	}
+	return HealthComponent->GetHealth();
 }
 
-void ABarricade::Repair(float RepairAmount)
+float ABarricade::GetMaxHealth() const
 {
-	if (IsDestroyed())
-	{
-		return; // ÆÄ±« »óÅÂ¿¡¼­´Â ¼ö¸® ºÒ°¡ (Àç°ÇÃà Á¤Ã¥ÀÌ¸é º°µµ Ã³¸®)
-	}
+	return HealthComponent->GetMaxHealth();
+}
 
-	CurrentHealth = FMath::Clamp(CurrentHealth + RepairAmount, 0.f, MaxHealth);
-	OnHPChanged.Broadcast(CurrentHealth, MaxHealth);
+bool ABarricade::IsDestroyed() const
+{
+	return HealthComponent->IsDead();
+}
+
+bool ABarricade::IsFullHealth() const
+{
+	return HealthComponent->IsFullHealth();
+}
+
+void ABarricade::HandleHealthChanged(float Health, float MaxHealth, float /*Delta*/, AActor* /*DamageInstigator*/)
+{
+	OnHPChanged.Broadcast(Health, MaxHealth);
+}
+
+void ABarricade::HandleDeath(AActor* /*DamageInstigator*/)
+{
+	OnBarricadeDestroyed();
 }
 
 void ABarricade::OnBarricadeDestroyed()
 {
 	BlockingVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// ÆÄ±« ¿¬ÃâÀº BP¿¡¼­ ÀÌº¥Æ® ¹ÙÀÎµùÇØ¼­ Ã³¸®
+	// íŒŒê´´ ì—°ì¶œì€ BP ì—ì„œ ì´ë²¤íŠ¸ ë°”ì¸ë”©í•´ì„œ ì²˜ë¦¬
 }
 
-// ¦¡¦¡ IInteractableInterface ±¸Çö ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+// â”€â”€ IInteractableInterface êµ¬í˜„ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 void ABarricade::Interact_Implementation(ACharacter* Interactor)
 {
-	if (IsDestroyed())
+	if (IsDestroyed() || IsFullHealth())
 	{
-		
 		return;
 	}
 
-	if (IsFullHealth())
-	{
-		
-		return;
-	}
-
-	Repair(RepairAmountPerInteract);
-	
+	HealthComponent->Heal(RepairAmountPerInteract);
 }
 
 FText ABarricade::GetInteractHintText_Implementation()
@@ -106,5 +100,5 @@ FText ABarricade::GetInteractHintText_Implementation()
 	{
 		return FText::FromString(TEXT("Barricade Max Health"));
 	}
-	return FText::FromString(TEXT("Repiar E"));
+	return FText::FromString(TEXT("Repair E"));
 }

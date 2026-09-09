@@ -2,120 +2,19 @@
 
 
 #include "Pistol.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/Controller.h"
-#include "DrawDebugHelpers.h"
 
 APistol::APistol()
 {
-	// ±ÇÃÑ ±âº» µ¥ÀÌÅÍ (BP¿¡¼­ µ¤¾î¾²±â °¡´É)
+	// ê¶Œì´ ê¸°ë³¸ ë°ì´í„° (BPì—ì„œ ë®ì–´ì“°ê¸° ê°€ëŠ¥)
 	GunData.MagazineSize = 12;
 	GunData.MaxReserveAmmo = 60;
 	GunData.Damage = 20.f;
 	GunData.Range = 5000.f;
-	GunData.FireRate = 0.f; // ´Ü¹ßÀÌ¶ó RPM ÀÇ¹Ì ¾øÀ½, ÇÊ¿äÇÏ¸é Äğ´Ù¿îÀ¸·Î »ç¿ë
+	GunData.FireRate = 0.f;      // ë°˜ìë™ì´ë¼ ë¯¸ì‚¬ìš©
 	GunData.ReloadTime = 1.5f;
+	GunData.bAutomatic = false;
 
 	WeaponType = EWeaponType::Pistol;
+	PreferredSlot = EWeaponSlot::Secondary;
 	WeaponName = FText::FromString(TEXT("Eagle"));
-}
-
-void APistol::StartFire()
-{
-	if (!CanFire())
-	{
-		return;
-	}
-
-	Fire();
-	SetGunState(EGunState::Firing);
-
-	// ´Ü¹ß ¹«±â: ÇÑ ¹ø ½î°í ¹Ù·Î Idle·Î º¹±Í (ÀÚµ¿¹ß»ç ¾Æ´Ô)
-	SetGunState(EGunState::Idle);
-}
-
-void APistol::StopFire()
-{
-	// ´Ü¹ßÀÌ¶ó º°µµ Ã³¸® ºÒÇÊ¿ä. ¿¬¹ß ¹«±â¿Í ÀÎÅÍÆäÀÌ½º ¸ÂÃß±â À§ÇØ ºñ¿öµÒ.
-}
-
-void APistol::Fire()
-{
-    if (CurrentAmmo <= 0)
-    {
-        SetGunState(EGunState::Empty);
-        return;
-    }
-    CurrentAmmo--;
-
-    ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
-    if (!OwnerChar) return;
-
-    FVector MuzzleLocation = WeaponMesh->GetSocketLocation(TEXT("Muzzle"));
-    FVector AimPoint;
-
-    if (AController* OwnerController = OwnerChar->GetController())
-    {
-        if (OwnerController->IsPlayerController())
-        {
-            // 1´Ü°è: Ä«¸Ş¶ó ±âÁØÀ¸·Î Å©·Î½ºÇì¾î°¡ °¡¸®Å°´Â ÁöÁ¡ Å½»ö
-            FVector CameraLocation;
-            FRotator CameraRotation;
-            OwnerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
-            FVector CameraTraceEnd = CameraLocation + CameraRotation.Vector() * TraceRange;
-
-            FHitResult CameraHit;
-            FCollisionQueryParams CameraParams;
-            CameraParams.AddIgnoredActor(this);
-            CameraParams.AddIgnoredActor(OwnerChar);
-
-            bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
-                CameraHit, CameraLocation, CameraTraceEnd, ECC_Pawn, CameraParams
-            );
-
-            // ¸Â¾ÒÀ¸¸é Ãæµ¹ ÁöÁ¡, ¾È ¸Â¾ÒÀ¸¸é »ç°Å¸® ³¡Á¡À» Á¶ÁØ ¸ñÇ¥·Î
-            AimPoint = bCameraHit ? CameraHit.ImpactPoint : CameraTraceEnd;
-        }
-        else
-        {
-            // AI(Ally µî): Ä³¸¯ÅÍ Á¤¸é ±âÁØ
-            AimPoint = OwnerChar->GetActorLocation() + OwnerChar->GetActorForwardVector() * TraceRange;
-        }
-    }
-    else
-    {
-        AimPoint = OwnerChar->GetActorLocation() + OwnerChar->GetActorForwardVector() * TraceRange;
-    }
-
-    // 2´Ü°è: ÃÑ±¸¿¡¼­ Á¶ÁØ ¸ñÇ¥¸¦ ÇâÇØ ½ÇÁ¦ µ¥¹ÌÁö ÆÇÁ¤ Æ®·¹ÀÌ½º
-    FVector TraceStart = MuzzleLocation;
-    FVector AimDirection = (AimPoint - MuzzleLocation).GetSafeNormal();
-    FVector TraceEnd = TraceStart + AimDirection * TraceRange;
-
-    FHitResult HitResult;
-    FCollisionQueryParams QueryParams;
-    QueryParams.AddIgnoredActor(this);
-    QueryParams.AddIgnoredActor(OwnerChar);
-
-    bool bHit = GetWorld()->LineTraceSingleByChannel(
-        HitResult, TraceStart, TraceEnd, ECC_Pawn, QueryParams
-    );
-
-    PlayFireSound();
-    PlayFireMontage();
-
-    OnWeaponFired.Broadcast(); // Ä³¸¯ÅÍ ¸ùÅ¸ÁÖ Æ®¸®°Å
-
-    if (bHit && HitResult.GetActor())
-    {
-        UGameplayStatics::ApplyPointDamage(
-            HitResult.GetActor(), GunData.Damage, AimDirection,
-            HitResult, OwnerChar->GetController(), this, nullptr
-        );
-    }
-
-#if WITH_EDITOR
-    DrawDebugLine(GetWorld(), TraceStart, bHit ? HitResult.ImpactPoint : TraceEnd, FColor::Red, false, 1.f);
-#endif
 }

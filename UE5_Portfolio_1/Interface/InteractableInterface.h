@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -22,11 +22,11 @@ class UE5_PORTFOLIO_1_API IInteractableInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-    // »óÈ£ÀÛ¿ë ½ÇÇà (EÅ°)
+    // ìƒí˜¸ì‘ìš© ì‹¤í–‰ (Eí‚¤)
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
     void Interact(ACharacter* Interactor);
 
-	// »óÈ£ÀÛ¿ë ÈùÆ® ÅØ½ºÆ® ¹İÈ¯
+	// ìƒí˜¸ì‘ìš© íŒíŠ¸ í…ìŠ¤íŠ¸ ë°˜í™˜
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	FText GetInteractHintText();
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -12,6 +12,8 @@
 #include "HUDComponent.generated.h"
 
 class ABarricade;
+class AWeaponBase;
+class ARangedWeapon;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE5_PORTFOLIO_1_API UHUDComponent : public UActorComponent
@@ -32,19 +34,25 @@ public:
 
 		
 public:
-// »óÈ£ÀÛ¿ë ÈùÆ® °ü·Ã
+// ìƒí˜¸ì‘ìš© íŒíŠ¸ ê´€ë ¨
 	void ShowInteractHint(const FText& Text);
 	void HideInteractHint();
 
-// Åº¾à °ü·Ã
+// íƒ„ì•½ ê´€ë ¨ â€” InventoryComponent.OnWeaponEquipped / RangedWeapon.OnAmmoChanged ì— ë°”ì¸ë”©
 	void UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo, const FText& WeaponName);
 
-// ¹Ù¸®ÄÉÀÌµå °ü·Ã
+	UFUNCTION()
+	void HandleWeaponEquipped(AWeaponBase* NewWeapon);
+
+	UFUNCTION()
+	void HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo);
+
+// ë°”ë¦¬ì¼€ì´ë“œ ê´€ë ¨
 	void InitBarricadeUI(ABarricade* Barricade);
 	UFUNCTION()
 	void UpdateBarricadeUI(float CurrentHP, float MaxHP);
 
-// ÄÚÀÎ °ü·Ã
+// ì½”ì¸ ê´€ë ¨
 	UFUNCTION()
 	void UpdateCoinUI(int32 CurrentCoin);
 
@@ -75,6 +83,9 @@ private:
 	UInteractHintWidget* InteractHintWidget = nullptr;
 	UPROPERTY()
 	UAmmoWidget* AmmoWidget = nullptr;
+	// í˜„ì¬ íƒ„ì•½ ë¸ë¦¬ê²Œì´íŠ¸ê°€ ë°”ì¸ë”©ëœ ë¬´ê¸° (ë¬´ê¸° êµì²´ ì‹œ ê°ˆì•„íƒ)
+	UPROPERTY()
+	ARangedWeapon* BoundAmmoWeapon = nullptr;
 	UPROPERTY()
 	UBarricadeWidget* BarricadeWidget = nullptr;
 	UPROPERTY()

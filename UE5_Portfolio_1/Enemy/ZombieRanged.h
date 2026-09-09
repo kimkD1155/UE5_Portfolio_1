@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -35,7 +35,7 @@ protected:
 	float ShootRange = 1500.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	FName ProjectileSpawnSocket = TEXT("AttackHitBoxSocket"); // º’/π´±‚ º“ƒœ ¿Ã∏ß
+	FName ProjectileSpawnSocket = TEXT("AttackHitBoxSocket"); // ÏÜê/Î¨¥Í∏∞ ÏÜåÏºì Ïù¥Î¶Ñ
 
 	UPROPERTY()
 	TWeakObjectPtr<AEnemyProjectile> HeldProjectile;

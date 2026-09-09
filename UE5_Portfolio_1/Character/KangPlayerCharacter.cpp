@@ -6,33 +6,33 @@
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-//¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ Ä¿½ºÅÒ ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ¤Ñ
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ì»¤ìŠ¤í…€ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 #include "../Weapon/WeaponBase.h"
 #include "../Weapon/RangedWeapon.h"
 #include "../Component/HUDComponent.h"
 #include "../Component/InteractionComponent.h"
 #include "../Component/InventoryComponent.h"
-#include "../Animation/KangAnimInstance.h"
+#include "../Component/HealthComponent.h"
+#include "../Component/CombatComponent.h"
 #include "../Core/KangPlayerState.h"
 #include "../Core/KangPlayerController.h"
 #include "../Props/Shop.h"
 
 
-// Sets default values
 AKangPlayerCharacter::AKangPlayerCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	HUDComponent = CreateDefaultSubobject<UHUDComponent>(TEXT("HUDComponent"));
 	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("InteractionComponent"));
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 
-	// ¦¡¦¡ Ä«¸Ş¶ó ¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡¦¡
+	// â”€â”€ ì¹´ë©”ë¼ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.f;
@@ -50,43 +50,34 @@ AKangPlayerCharacter::AKangPlayerCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 1000.f, 0.f);
 }
 
-// Called when the game starts or when spawned
 void AKangPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-	// ÄÚÀÎ µ¨¸®°ÔÀÌÆ® ¹ÙÀÎµù
+
+	HealthComponent->OnDeath.AddDynamic(this, &AKangPlayerCharacter::HandleDeath);
+
+	// ì½”ì¸ ë¸ë¦¬ê²Œì´íŠ¸ ë°”ì¸ë”©
 	if (AKangPlayerState* PS = GetPlayerState<AKangPlayerState>())
 	{
 		PS->OnCoinChanged.AddDynamic(HUDComponent, &UHUDComponent::UpdateCoinUI);
-		HUDComponent->UpdateCoinUI(PS->GetCoin()); // ÃÊ±â°ª °»½Å
+		HUDComponent->UpdateCoinUI(PS->GetCoin()); // ì´ˆê¸°ê°’ ê°±ì‹ 
 	}
 }
 
-// Called every frame
 void AKangPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	UpdateMovementState();
 	UpdateLeftHandIK();
-	if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon()))
-	{
-		
-		HUDComponent->UpdateAmmoUI(
-			Ranged->GetCurrentAmmo(),
-			Ranged->GetReserveAmmo(),
-			Ranged->GetWeaponName()
-		);
 
-		float TargetFOV = bIsAiming ? AimFOV : DefaultFOV;
-		FollowCamera->SetFieldOfView(
-			FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, AimInterpSpeed)
-		);
-	}
-	
+	// ì¡°ì¤€ FOV ë³´ê°„ë§Œ ë§¤ í”„ë ˆì„ í•„ìš”. íƒ„ì•½ UI ëŠ” ë¬´ê¸°ì˜ OnAmmoChanged ë¸ë¦¬ê²Œì´íŠ¸ê°€ ë‹´ë‹¹.
+	const float TargetFOV = bIsAiming ? AimFOV : DefaultFOV;
+	FollowCamera->SetFieldOfView(
+		FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, AimInterpSpeed)
+	);
 }
 
-// Called to bind functionality to input
 void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -112,16 +103,43 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(LogTemp, Error, TEXT("'%s' Failed to find an Enhanced Input Component!"), *GetNameSafe(this));
 	}
+}
+
+AWeaponBase* AKangPlayerCharacter::GetActiveWeapon() const
+{
+	return InventoryComponent ? InventoryComponent->GetEquippedWeapon() : nullptr;
+}
+
+EWeaponType AKangPlayerCharacter::GetCurrentWeaponType() const
+{
+	if (AWeaponBase* Weapon = GetActiveWeapon())
+	{
+		return Weapon->GetWeaponType();
+	}
+	return EWeaponType::None;
+}
+
+void AKangPlayerCharacter::HandleDeath(AActor* /*DamageInstigator*/)
+{
+	// TODO: ê²Œì„ì˜¤ë²„ í”Œë¡œìš°ëŠ” GameMode/GameState í˜ì´ì¦ˆ ì‘ì—…ì—ì„œ ì—°ê²°
+	CombatComponent->StopFire();
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+	GetCharacterMovement()->DisableMovement();
+	bIsFiring = false;
+	bIsAiming = false;
 }
 
 void AKangPlayerCharacter::UpdateMovementState()
 {
-	float Speed = GetVelocity().Size();
+	const float Speed = GetVelocity().Size();
 	AimYaw = FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, GetControlRotation().Yaw);
 
-	if (Speed > 10.f)
+	if (Speed > MovingSpeedThreshold)
 	{
 		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	}
@@ -142,23 +160,24 @@ void AKangPlayerCharacter::UpdateMovementState()
 			Turn = false;
 			TurnDirection = ETurnDirection::None;
 		}
-		
+
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	}
-
-	
 }
 
 void AKangPlayerCharacter::UpdateLeftHandIK()
 {
-	ARangedWeapon* EquippedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
-	if (bIsEquipping || !EquippedWeapon || !EquippedWeapon->GetWeaponMesh())
+	ARangedWeapon* EquippedWeapon = Cast<ARangedWeapon>(GetActiveWeapon());
+	const bool bReloading = CombatComponent && CombatComponent->IsReloading();
+	const bool bEquipping = InventoryComponent && InventoryComponent->GetIsEquipping();
+
+	if (bEquipping || bReloading || !EquippedWeapon || !EquippedWeapon->GetWeaponMesh())
 	{
 		bShouldUseLeftHandIK = false;
 		return;
 	}
 
-	if (EquippedWeapon->GetWeaponMesh()->DoesSocketExist(TEXT("LeftHandGrip")) && ReloadingWeapon == nullptr)
+	if (EquippedWeapon->GetWeaponMesh()->DoesSocketExist(TEXT("LeftHandGrip")))
 	{
 		LeftHandIKTarget = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(TEXT("LeftHandGrip"), RTS_World);
 		bShouldUseLeftHandIK = true;
@@ -171,32 +190,27 @@ void AKangPlayerCharacter::UpdateLeftHandIK()
 
 void AKangPlayerCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	const FVector2D MovementVector = Value.Get<FVector2D>();
 
 	const FRotator ControlRotation = GetControlRotation();
-	const FRotator YawRotation(0, ControlRotation.Yaw, 0); // Pitch/Roll Á¦°Å, Yaw¸¸ »ç¿ë
+	const FRotator YawRotation(0, ControlRotation.Yaw, 0); // Pitch/Roll ì œê±°, Yawë§Œ ì‚¬ìš©
 
 	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
 	AddMovementInput(Forward, MovementVector.Y);
 	AddMovementInput(Right, MovementVector.X);
-	
 }
 
 void AKangPlayerCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
 	{
-		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(-LookAxisVector.Y);
 	}
-
 }
 
 void AKangPlayerCharacter::OnJumped_Implementation()
@@ -211,137 +225,55 @@ void AKangPlayerCharacter::Landed(const FHitResult& Hit)
 
 void AKangPlayerCharacter::Interact(const FInputActionValue& Value)
 {
-	
+	AActor* Target = InteractionComponent->GetCurrentInteractTarget();
+	if (!Target) return;
 
-	if (!InteractionComponent->GetCurrentInteractTarget())
+	if (Target->Implements<UInteractableInterface>())
 	{
-		
-		return;
-	}
-
-
-	if (InteractionComponent->GetCurrentInteractTarget()->Implements<UInteractableInterface>())
-	{
-		IInteractableInterface::Execute_Interact(InteractionComponent->GetCurrentInteractTarget(), this);
+		IInteractableInterface::Execute_Interact(Target, this);
 	}
 }
 
 void AKangPlayerCharacter::Drop(const FInputActionValue& Value)
 {
-	
-	
 	InventoryComponent->DropWeapon();
-	
 }
 
 void AKangPlayerCharacter::StartFire(const FInputActionValue& Value)
 {
-	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
-
-	if (!RangedWeapon)
-	{
-		
-		return;
-	}
-	if (bIsEquipping == true)
-	{
-		
-		return;
-	}
+	if (InventoryComponent->GetIsEquipping()) return;
 
 	bIsFiring = true;
-	
-
-	
-
-	if (RangedWeapon->GetGunState() == EGunState::Reloading)
-	{
-		
-		return;
-	}
-
-	RangedWeapon->OnWeaponFired.RemoveDynamic(this, &AKangPlayerCharacter::OnWeaponFired);
-	RangedWeapon->OnWeaponFired.AddDynamic(this, &AKangPlayerCharacter::OnWeaponFired);
-
-
-	RangedWeapon->StartFire();
-	
+	CombatComponent->StartFire();
 }
-
-
 
 void AKangPlayerCharacter::StopFire(const FInputActionValue& Value)
 {
-	if (!InventoryComponent->GetEquippedWeapon()) return;
-	
-	
-	InventoryComponent->GetEquippedWeapon()->StopFire();
+	CombatComponent->StopFire();
 	bIsFiring = false;
 }
 
 void AKangPlayerCharacter::StartAim(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
-	if (!InventoryComponent->GetEquippedWeapon())
-	{
-		
-		return;
-	}
+	if (!GetActiveWeapon()) return;
+
 	bIsAiming = true;
-	
-	InventoryComponent->GetEquippedWeapon()->StartAim();
+	CombatComponent->StartAim();
 }
 
 void AKangPlayerCharacter::StopAim(const FInputActionValue& Value)
 {
-	if (!InventoryComponent->GetEquippedWeapon()) return;
-	
+	if (!GetActiveWeapon()) return;
+
 	bIsAiming = false;
-	InventoryComponent->GetEquippedWeapon()->StopAim();
+	CombatComponent->StopAim();
 }
 
 void AKangPlayerCharacter::Reload(const FInputActionValue& Value)
 {
-	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
-
-	if (!RangedWeapon)
-	{
-		
-		return;
-	}
-
-	if (!RangedWeapon->CanReload())
-	{
-		
-		return;
-	}
-
-	// ¸ùÅ¸ÁÖ ÀÖ´ÂÁö È®ÀÎ
-	if (!PistolReloadMontage || !RifleReloadMontage)
-	{
-		
-		return;
-	}
-
-	RangedWeapon->Reload();
-	ReloadingWeapon = RangedWeapon;
-
-	switch (RangedWeapon->GetWeaponType())
-	{
-		case EWeaponType::Pistol:
-			PlayReloadMontage(PistolReloadMontage);
-			break;
-		case EWeaponType::Rifle:
-			PlayReloadMontage(RifleReloadMontage);
-			break;
-		default:
-			
-			return;
-	}
-	
+	CombatComponent->Reload();
 }
-
-
 
 void AKangPlayerCharacter::EquipWeapon1(const FInputActionValue& Value)
 {
@@ -360,13 +292,11 @@ void AKangPlayerCharacter::EquipWeapon3(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::EquipWeapon4(const FInputActionValue& Value)
 {
-	
 }
 
 void AKangPlayerCharacter::Escape(const FInputActionValue& Value)
 {
-
-	// ¿­·ÁÀÖ´Â »óÁ¡ Ã£¾Æ¼­ ´İ±â
+	// ì—´ë ¤ìˆëŠ” ìƒì  ì°¾ì•„ì„œ ë‹«ê¸°
 	TArray<AActor*> Shops;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AShop::StaticClass(), Shops);
 	for (AActor* Actor : Shops)
@@ -380,91 +310,5 @@ void AKangPlayerCharacter::Escape(const FInputActionValue& Value)
 			}
 		}
 	}
-
-	
 }
 
-
-//-----------------¿©±â±îÁö Å° ¹ÙÀÎµù ¹× ÀÔ·Â Ã³¸®-----------------
-
-EWeaponType AKangPlayerCharacter::GetCurrentWeaponType() const
-{
-	if (InventoryComponent->GetEquippedWeapon())
-	{
-		return InventoryComponent->GetEquippedWeapon()->GetWeaponType();
-	}
-	return EWeaponType::None;
-}
-
-
-
-
-
-void AKangPlayerCharacter::PlayEquipMontage(UAnimMontage* MontageToPlay)
-{
-	if (!MontageToPlay) return;
-
-	bIsEquipping = true;
-	PlayAnimMontage(MontageToPlay);
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		FOnMontageEnded EndDelegate;
-		EndDelegate.BindUObject(this, &AKangPlayerCharacter::OnEquipMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
-	}
-}
-
-void AKangPlayerCharacter::PlayReloadMontage(UAnimMontage* MontageToPlay)
-{
-	if (!MontageToPlay) return;
-
-	PlayAnimMontage(MontageToPlay);
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		FOnMontageEnded EndDelegate;
-		EndDelegate.BindUObject(this, &AKangPlayerCharacter::OnReloadMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
-	}
-}
-
-
-void AKangPlayerCharacter::OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	if (ReloadingWeapon)
-	{
-		if (!bInterrupted)
-		{
-			ReloadingWeapon->ReloadFinished(); // Åº¾à Ã¤¿ì±â´Â Á¤»ó Á¾·á ½Ã¿¡¸¸
-		}
-		else
-		{
-			ReloadingWeapon->SetGunState(EGunState::Idle); // Áß´ÜµÆÀ¸¸é ±×³É »óÅÂ¸¸ º¹±¸
-		}
-		ReloadingWeapon = nullptr;
-	}
-}
-
-void AKangPlayerCharacter::OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	bIsEquipping = false;
-}
-
-void AKangPlayerCharacter::OnWeaponFired()
-{
-	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(InventoryComponent->GetEquippedWeapon());
-	if (!RangedWeapon) return;
-
-	switch (RangedWeapon->GetWeaponType())
-	{
-	case EWeaponType::Pistol:
-		PlayAnimMontage(PistolFireMontage);
-		break;
-	case EWeaponType::Rifle:
-		PlayAnimMontage(RifleFireMontage);
-		break;
-	default:
-		break;
-	}
-}

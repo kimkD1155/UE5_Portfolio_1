@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "ZombieTanker.h"
@@ -15,7 +15,7 @@ AZombieTanker::AZombieTanker()
 
 void AZombieTanker::Attack()
 {
-	AActor* Target = GetTargetLocation();
+	AActor* Target = GetTargetActor();
 	if (!Target) return;
 
 	

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BTTask_MoveForward.h"
@@ -21,10 +21,10 @@ EBTNodeResult::Type UBTTask_MoveForward::ExecuteTask(UBehaviorTreeComponent& Own
 	AActor* Target = Cast<AActor>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(TEXT("TargetActor")));
 	if (!Target) return EBTNodeResult::Failed;
 
-	// ¹Ù¿îµù ¹Ú½º ±âÁØ °¡Àå °¡±î¿î Á¡À¸·Î ÀÌµ¿
+	// ë°”ìš´ë”© ë°•ìŠ¤ ê¸°ì¤€ ê°€ìž¥ ê°€ê¹Œìš´ ì ìœ¼ë¡œ ì´ë™
 	FBox BoundingBox = Target->GetComponentsBoundingBox();
 	FVector ClosestPoint = BoundingBox.GetClosestPointTo(Pawn->GetActorLocation());
-	ClosestPoint.Z = Pawn->GetActorLocation().Z; // ZÃàÀº Àû ³ôÀÌ·Î °íÁ¤
+	ClosestPoint.Z = Pawn->GetActorLocation().Z; // Zì¶•ì€ ì  ë†’ì´ë¡œ ê³ ì •
 
 	AIC->MoveToLocation(ClosestPoint, AttackRange);
 
