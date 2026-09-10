@@ -28,6 +28,8 @@ public:
 
 	// IWeaponHolder
 	virtual AWeaponBase* GetActiveWeapon() const override { return EquippedWeapon; }
+	// 아군 공격력 업그레이드 배율 (플레이어의 런 진행도에서 조회)
+	virtual float GetOutgoingDamageMultiplier() const override;
 
 	//────────────────────────── 컴포넌트 ──────────────────────────
 protected:

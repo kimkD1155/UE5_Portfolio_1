@@ -9,6 +9,9 @@
 #include "../Widget/AmmoWidget.h"
 #include "../Widget/BarricadeWidget.h"
 #include "../Widget/CoinWidget.h"
+#include "../Widget/PhaseWidget.h"
+#include "../Widget/ResultWidget.h"
+#include "../Core/GamePhase.h"
 #include "HUDComponent.generated.h"
 
 class ABarricade;
@@ -56,6 +59,16 @@ public:
 	UFUNCTION()
 	void UpdateCoinUI(int32 CurrentCoin);
 
+// 국면(낮/밤) 관련 — AKangGameState 델리게이트에 바인딩
+	UFUNCTION()
+	void HandlePhaseChanged(EGamePhase NewPhase);
+
+	UFUNCTION()
+	void HandlePhaseTimeChanged(float Remaining);
+
+	// UEnemyManager::OnEnemyCountChanged (비-다이나믹) 바인딩
+	void HandleEnemyCountChanged(int32 NewCount);
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
@@ -72,6 +85,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<UCoinWidget> CoinWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UPhaseWidget> PhaseWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UResultWidget> ResultWidgetClass;
 
 private:
 	UPROPERTY()
@@ -90,4 +109,8 @@ private:
 	UBarricadeWidget* BarricadeWidget = nullptr;
 	UPROPERTY()
 	UCoinWidget* CoinWidget = nullptr;
+	UPROPERTY()
+	UPhaseWidget* PhaseWidget = nullptr;
+	UPROPERTY()
+	UResultWidget* ResultWidget = nullptr;
 };

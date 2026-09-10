@@ -26,4 +26,11 @@ class IWeaponHolder
 public:
 	// 현재 손에 든(제어 대상) 무기. 없으면 nullptr.
 	virtual AWeaponBase* GetActiveWeapon() const = 0;
+
+	// 이 소유자가 무기로 가하는 데미지 배율 (업그레이드 등). 기본 1.0.
+	// 무기가 소유자 타입을 몰라도 "얼마나 버프됐는지" 를 물을 수 있게 한다.
+	virtual float GetOutgoingDamageMultiplier() const { return 1.f; }
+
+	// 이 소유자의 연사 속도 배율. 2.0 이면 발사 간격이 절반. 기본 1.0.
+	virtual float GetFireRateMultiplier() const { return 1.f; }
 };

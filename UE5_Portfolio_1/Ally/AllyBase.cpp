@@ -15,6 +15,9 @@
 #include "../Weapon/RangedWeapon.h"
 #include "../Component/HealthComponent.h"
 #include "../Component/CombatComponent.h"
+#include "../Core/KangPlayerState.h"
+#include "../Core/UpgradeType.h"
+#include "GameFramework/PlayerController.h"
 
 AAllyBase::AAllyBase()
 {
@@ -70,6 +73,21 @@ void AAllyBase::Tick(float DeltaTime)
 		}
 	}
 #endif
+}
+
+float AAllyBase::GetOutgoingDamageMultiplier() const
+{
+	if (const UWorld* W = GetWorld())
+	{
+		if (const APlayerController* PC = W->GetFirstPlayerController())
+		{
+			if (const AKangPlayerState* PS = PC->GetPlayerState<AKangPlayerState>())
+			{
+				return PS->GetUpgradeMultiplier(EUpgradeType::AllyDamage);
+			}
+		}
+	}
+	return 1.f;
 }
 
 void AAllyBase::HandleDeath(AActor* /*DamageInstigator*/)

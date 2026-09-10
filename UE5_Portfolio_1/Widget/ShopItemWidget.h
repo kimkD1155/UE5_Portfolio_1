@@ -20,10 +20,17 @@ class UE5_PORTFOLIO_1_API UShopItemWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void InitItem(const FShopItemData& InItemData, int32 InItemIndex);
+	// DisplayPrice: 실제 표시 가격 (업그레이드는 레벨별로 계산된 값)
+	// CurrentLevel/bMaxed: 업그레이드 항목의 현재 레벨과 최대치 여부 (무기/아군은 0, false)
+	void InitItem(const FShopItemData& InItemData, int32 InItemIndex,
+		int32 DisplayPrice, int32 CurrentLevel, bool bMaxed);
 
 	UPROPERTY(BlueprintAssignable)
 	FOnBuyClicked OnBuyClicked;
+
+	// BP 에서 항목을 원하는 서식으로 표시하고 싶을 때 (레벨 배지 등). 선택적.
+	UFUNCTION(BlueprintImplementableEvent, Category = "Shop")
+	void OnItemInitialized(int32 DisplayPrice, int32 CurrentLevel, bool bMaxed);
 
 protected:
 	virtual void NativeConstruct() override;

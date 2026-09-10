@@ -47,6 +47,8 @@ public:
 
 	// IWeaponHolder — 현재 장착 무기는 인벤토리 컴포넌트가 관리
 	virtual AWeaponBase* GetActiveWeapon() const override;
+	virtual float GetOutgoingDamageMultiplier() const override;
+	virtual float GetFireRateMultiplier() const override;
 
 	//────────────────────────── 키 입력 관련 ──────────────────────────
 protected:
@@ -111,6 +113,11 @@ protected:
 
 	UFUNCTION()
 	void HandleDeath(AActor* DamageInstigator);
+
+	// PlayerState.OnUpgradesChanged 구독 — 체력 재생 속도를 갱신한다.
+	// (공격력/공격속도 배율은 매 발사 시점에 PlayerState 를 직접 조회하므로 여기서 처리하지 않는다.)
+	UFUNCTION()
+	void HandleUpgradesChanged();
 
 public:
 	// 컴포넌트 접근자

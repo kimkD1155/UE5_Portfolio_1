@@ -115,29 +115,6 @@ protected:
 
     
 protected:
-    UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilPitchKick = 0.5f;
-
-    UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilYawKickMin = -1.0f;
-
-    UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilYawKickMax = 1.0f;
-
-    UPROPERTY(EditAnywhere, Category = "Recoil")
-    float RecoilRecoverySpeed = 2.0f;
-
-    UPROPERTY(EditAnywhere, Category = "Recoil")
-    float MaxRecoilPitchOffset = 10.0f;
-
-    float CurrentRecoilPitchOffset = 0.0f;
-    float CurrentRecoilYawOffset = 0.0f;
-
-    UPROPERTY(EditAnywhere, Category = "Weapon")
-    float AimSpread = 1.5f; 
-
-    FVector ApplyAimSpread(const FVector& AimDir) const;
-
     void BroadcastAmmo() { OnAmmoChanged.Broadcast(CurrentAmmo, ReserveAmmo); }
 
 public:

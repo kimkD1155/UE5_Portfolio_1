@@ -42,4 +42,8 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UVerticalBox* AllyList;
+
+	// 업그레이드 항목용. 기존 상점 BP 를 깨지 않도록 선택적 바인딩.
+	UPROPERTY(meta = (BindWidgetOptional))
+	UVerticalBox* UpgradeList;
 };

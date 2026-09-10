@@ -17,16 +17,35 @@ void UShopWidget::InitShop(AShop* InShop)
 	RifleList->ClearChildren();
 	PistolList->ClearChildren();
 	AllyList->ClearChildren();
+	if (UpgradeList) UpgradeList->ClearChildren();
+
+	AKangPlayerState* PS = nullptr;
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PS = PC->GetPlayerState<AKangPlayerState>();
+	}
 
 	for (int32 i = 0; i < Shop->ShopItems.Num(); i++)
 	{
+		const FShopItemData& Item = Shop->ShopItems[i];
+
 		UShopItemWidget* ItemWidget = CreateWidget<UShopItemWidget>(this, ShopItemWidgetClass);
 		if (!ItemWidget) continue;
 
-		ItemWidget->InitItem(Shop->ShopItems[i], i);
+		int32 DisplayPrice = Item.Price;
+		int32 CurrentLevel = 0;
+		bool bMaxed = false;
+		if (Item.ItemType == EShopItemType::Upgrade && PS)
+		{
+			CurrentLevel = PS->GetUpgradeLevel(Item.UpgradeType);
+			bMaxed = PS->IsUpgradeMaxed(Item.UpgradeType);
+			DisplayPrice = PS->GetUpgradeCost(Item.UpgradeType);
+		}
+
+		ItemWidget->InitItem(Item, i, DisplayPrice, CurrentLevel, bMaxed);
 		ItemWidget->OnBuyClicked.AddDynamic(this, &UShopWidget::BuyItem);
 
-		switch (Shop->ShopItems[i].ItemType)
+		switch (Item.ItemType)
 		{
 		case EShopItemType::Rifle:
 			RifleList->AddChild(ItemWidget);
@@ -36,6 +55,9 @@ void UShopWidget::InitShop(AShop* InShop)
 			break;
 		case EShopItemType::Ally:
 			AllyList->AddChild(ItemWidget);
+			break;
+		case EShopItemType::Upgrade:
+			if (UpgradeList) UpgradeList->AddChild(ItemWidget);
 			break;
 		}
 	}
@@ -59,9 +81,17 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 
 	FShopItemData& Item = Shop->ShopItems[ItemIndex];
 
+	// 업그레이드는 비용이 레벨에 따라 달라지므로 PlayerState 가 비용 계산과 코인 차감을 모두 처리한다.
+	if (Item.ItemType == EShopItemType::Upgrade)
+	{
+		PS->TryPurchaseUpgrade(Item.UpgradeType);
+		InitShop(Shop); // 레벨/다음 비용 표시 갱신
+		return;
+	}
+
 	if (!PS->SpendCoin(Item.Price))
 	{
-		
+
 		return;
 	}
 

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "KangPlayerCharacter.h"
@@ -19,6 +19,9 @@
 #include "../Component/CombatComponent.h"
 #include "../Core/KangPlayerState.h"
 #include "../Core/KangPlayerController.h"
+#include "../Core/KangPlayerGameModeBase.h"
+#include "../Core/UpgradeType.h"
+#include "../Data/UpgradeTable.h"
 #include "../Props/Shop.h"
 
 
@@ -62,7 +65,42 @@ void AKangPlayerCharacter::BeginPlay()
 	{
 		PS->OnCoinChanged.AddDynamic(HUDComponent, &UHUDComponent::UpdateCoinUI);
 		HUDComponent->UpdateCoinUI(PS->GetCoin()); // 초기값 갱신
+
+		PS->OnUpgradesChanged.AddDynamic(this, &AKangPlayerCharacter::HandleUpgradesChanged);
+		HandleUpgradesChanged(); // 초기 반영
 	}
+}
+
+float AKangPlayerCharacter::GetOutgoingDamageMultiplier() const
+{
+	if (const AKangPlayerState* PS = GetPlayerState<AKangPlayerState>())
+	{
+		return PS->GetUpgradeMultiplier(EUpgradeType::PlayerDamage);
+	}
+	return 1.f;
+}
+
+float AKangPlayerCharacter::GetFireRateMultiplier() const
+{
+	if (const AKangPlayerState* PS = GetPlayerState<AKangPlayerState>())
+	{
+		return PS->GetUpgradeMultiplier(EUpgradeType::PlayerFireRate);
+	}
+	return 1.f;
+}
+
+void AKangPlayerCharacter::HandleUpgradesChanged()
+{
+	const AKangPlayerState* PS = GetPlayerState<AKangPlayerState>();
+	if (!PS || !HealthComponent) return;
+
+	float RegenRate = 0.f;
+	if (const UUpgradeTable* Table = PS->GetUpgradeTable())
+	{
+		RegenRate = PS->GetUpgradeLevel(EUpgradeType::HealthRegen)
+			* Table->GetPerLevelValue(EUpgradeType::HealthRegen);
+	}
+	HealthComponent->SetRegenPerSecond(RegenRate);
 }
 
 void AKangPlayerCharacter::Tick(float DeltaTime)
@@ -123,7 +161,12 @@ EWeaponType AKangPlayerCharacter::GetCurrentWeaponType() const
 
 void AKangPlayerCharacter::HandleDeath(AActor* /*DamageInstigator*/)
 {
-	// TODO: 게임오버 플로우는 GameMode/GameState 페이즈 작업에서 연결
+	// 플레이어 사망 = 게임오버. 국면 전환/UI 는 GameMode 가 처리한다.
+	if (AKangPlayerGameModeBase* GM = GetWorld()->GetAuthGameMode<AKangPlayerGameModeBase>())
+	{
+		GM->NotifyPlayerDied();
+	}
+
 	CombatComponent->StopFire();
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{

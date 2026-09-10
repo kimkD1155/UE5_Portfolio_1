@@ -5,109 +5,133 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
 #include "../Manager/EnemyManager.h"
+#include "../Core/KangGameState.h"
 
-
-// Sets default values
 AEnemySpawner::AEnemySpawner()
 {
-    PrimaryActorTick.bCanEverTick = true;
-    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	PrimaryActorTick.bCanEverTick = false;
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
-    SpawnArea = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawnArea"));
-    SpawnArea->SetupAttachment(RootComponent);
-    SpawnArea->SetBoxExtent(FVector(200.f, 200.f, 100.f));
-    SpawnArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SpawnArea = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawnArea"));
+	SpawnArea->SetupAttachment(RootComponent);
+	SpawnArea->SetBoxExtent(FVector(200.f, 200.f, 100.f));
+	SpawnArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void AEnemySpawner::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
-	UEnemyManager* Manager = GetWorld()->GetSubsystem<UEnemyManager>();
-	UE_LOG(LogTemp, Warning, TEXT("Current Enemy Count: %d"), Manager ? Manager->GetEnemyCount() : 0);
-}
-
-// Called when the game starts or when spawned
 void AEnemySpawner::BeginPlay()
 {
-    Super::BeginPlay();
+	Super::BeginPlay();
 
-    CurrentSpawnInterval = InitialSpawnInterval;
+	CurrentSpawnInterval = InitialSpawnInterval;
 
-    float RandomDelay = FMath::RandRange(0.f, InitialSpawnInterval);
-    GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, RandomDelay, false);
-    GetWorldTimerManager().SetTimer(DifficultyTimerHandle, this, &AEnemySpawner::UpdateDifficulty, DifficultyUpInterval, true);
+	if (AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>())
+	{
+		GS->OnSpawningActiveChanged.AddDynamic(this, &AEnemySpawner::HandleSpawningActiveChanged);
+
+		// BeginPlay 순서상 GameMode 가 이미 스폰 창을 열어둔 경우를 대비해 현재 상태를 반영한다.
+		if (GS->IsSpawningActive())
+		{
+			StartSpawning();
+		}
+	}
 }
 
-TSubclassOf<ACharacter> AEnemySpawner::SelectEnemyClass()
+void AEnemySpawner::HandleSpawningActiveChanged(bool bActive)
 {
-    if (EnemySpawnInfos.Num() == 0) return nullptr;
-
-    // 전체 가중치 합산
-    float TotalWeight = 0.f;
-    for (const FEnemySpawnInfo& Info : EnemySpawnInfos)
-    {
-        TotalWeight += Info.SpawnWeight;
-    }
-
-    // 랜덤 값 뽑기
-    float RandValue = FMath::RandRange(0.f, TotalWeight);
-    float AccumulatedWeight = 0.f;
-
-    for (const FEnemySpawnInfo& Info : EnemySpawnInfos)
-    {
-        AccumulatedWeight += Info.SpawnWeight;
-        if (RandValue <= AccumulatedWeight)
-        {
-            return Info.EnemyClass;
-        }
-    }
-
-    return EnemySpawnInfos.Last().EnemyClass;
+	if (bActive)
+	{
+		StartSpawning();
+	}
+	else
+	{
+		StopSpawning();
+	}
 }
 
-FVector AEnemySpawner::GetRandomSpawnLocation()
+void AEnemySpawner::StartSpawning()
 {
-    FVector Origin = SpawnArea->GetComponentLocation();
-    FVector Extent = SpawnArea->GetScaledBoxExtent();
+	// 밤이 시작된 날짜로 난이도(스폰 간격) 계산
+	int32 DayNumber = 1;
+	if (AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>())
+	{
+		DayNumber = GS->GetDayNumber();
+	}
+	CurrentSpawnInterval = FMath::Max(
+		InitialSpawnInterval - (DayNumber - 1) * SpawnIntervalDecrementPerDay,
+		MinSpawnInterval);
 
-    return FVector(
-        FMath::RandRange(Origin.X - Extent.X, Origin.X + Extent.X),
-        FMath::RandRange(Origin.Y - Extent.Y, Origin.Y + Extent.Y),
-        Origin.Z
-    );
+	const float FirstDelay = FMath::FRandRange(0.f, CurrentSpawnInterval);
+	GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, FirstDelay, false);
+}
+
+void AEnemySpawner::StopSpawning()
+{
+	GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
 }
 
 void AEnemySpawner::SpawnEnemy()
 {
-    TSubclassOf<ACharacter> SelectedClass = SelectEnemyClass();
-    if (!SelectedClass) return;
+	// 스폰 창이 닫혔으면 재예약하지 않는다 (StopSpawning 의 ClearTimer 와 이중 안전장치)
+	if (AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>())
+	{
+		if (!GS->IsSpawningActive()) return;
+	}
 
-    FVector SpawnLocation = GetRandomSpawnLocation();
-    FRotator SpawnRotation = GetActorRotation();
+	TSubclassOf<ACharacter> SelectedClass = SelectEnemyClass();
+	if (SelectedClass)
+	{
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-    FActorSpawnParameters Params;
-    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		ACharacter* SpawnedEnemy = GetWorld()->SpawnActor<ACharacter>(
+			SelectedClass, GetRandomSpawnLocation(), GetActorRotation(), Params);
 
-    ACharacter* SpawnedEnemy = GetWorld()->SpawnActor<ACharacter>(SelectedClass, SpawnLocation, SpawnRotation, Params);
-    if (SpawnedEnemy)
-    {
-        if (UEnemyManager* Manager = GetWorld()->GetSubsystem<UEnemyManager>())
-        {
-            Manager->RegisterEnemy(SpawnedEnemy);
-        }
-    }
+		if (SpawnedEnemy)
+		{
+			if (UEnemyManager* Manager = GetWorld()->GetSubsystem<UEnemyManager>())
+			{
+				Manager->RegisterEnemy(SpawnedEnemy);
+			}
+		}
+	}
 
-    float RandomInterval = FMath::RandRange(CurrentSpawnInterval * 0.5f, CurrentSpawnInterval * 1.5f);
-    GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, RandomInterval, false);
+	const float NextInterval = FMath::FRandRange(CurrentSpawnInterval * 0.5f, CurrentSpawnInterval * 1.5f);
+	GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnEnemy, NextInterval, false);
 }
 
-void AEnemySpawner::OnEnemyDestroyed(AActor* DestroyedActor)
+TSubclassOf<ACharacter> AEnemySpawner::SelectEnemyClass()
 {
-    CurrentEnemyCount = FMath::Max(0, CurrentEnemyCount - 1);
+	if (EnemySpawnInfos.Num() == 0) return nullptr;
+
+	float TotalWeight = 0.f;
+	for (const FEnemySpawnInfo& Info : EnemySpawnInfos)
+	{
+		TotalWeight += Info.SpawnWeight;
+	}
+
+	float RandValue = FMath::FRandRange(0.f, TotalWeight);
+	float AccumulatedWeight = 0.f;
+
+	for (const FEnemySpawnInfo& Info : EnemySpawnInfos)
+	{
+		AccumulatedWeight += Info.SpawnWeight;
+		if (RandValue <= AccumulatedWeight)
+		{
+			return Info.EnemyClass;
+		}
+	}
+
+	return EnemySpawnInfos.Last().EnemyClass;
 }
 
-void AEnemySpawner::UpdateDifficulty()
+FVector AEnemySpawner::GetRandomSpawnLocation()
 {
-    CurrentSpawnInterval = FMath::Max(CurrentSpawnInterval - SpawnIntervalDecrement, MinSpawnInterval);
-    //UE_LOG(LogTemp, Warning, TEXT("Spawn interval: %.1f"), CurrentSpawnInterval);
+	FVector Origin = SpawnArea->GetComponentLocation();
+	FVector Extent = SpawnArea->GetScaledBoxExtent();
+
+	return FVector(
+		FMath::FRandRange(Origin.X - Extent.X, Origin.X + Extent.X),
+		FMath::FRandRange(Origin.Y - Extent.Y, Origin.Y + Extent.Y),
+		Origin.Z
+	);
 }

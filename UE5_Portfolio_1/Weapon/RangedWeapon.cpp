@@ -2,6 +2,8 @@
 
 
 #include "RangedWeapon.h"
+#include "../UE5_Portfolio_1.h"
+#include "../Interface/WeaponHolder.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
@@ -35,9 +37,16 @@ void ARangedWeapon::StartFire()
 
     if (GunData.bAutomatic)
     {
-        // 첫 발은 즉시, 이후 FireRate 간격으로 반복
+        // 소유자의 연사 속도 배율만큼 발사 간격을 줄인다 (업그레이드)
+        float Interval = GunData.FireRate;
+        if (const IWeaponHolder* Holder = Cast<IWeaponHolder>(GetOwner()))
+        {
+            Interval = GunData.FireRate / FMath::Max(Holder->GetFireRateMultiplier(), 0.01f);
+        }
+
+        // 첫 발은 즉시, 이후 Interval 간격으로 반복
         GetWorldTimerManager().SetTimer(FireTimerHandle, this, &ARangedWeapon::FireOnce,
-            FMath::Max(GunData.FireRate, 0.01f), true, 0.f);
+            FMath::Max(Interval, 0.01f), true, 0.f);
     }
     else
     {
@@ -94,19 +103,19 @@ void ARangedWeapon::FireOnce()
         FVector CamLoc;
         FRotator CamRot;
         OwnerController->GetPlayerViewPoint(CamLoc, CamRot);
-        const FVector CamEnd = CamLoc + ApplyAimSpread(CamRot.Vector()) * Range;
+        const FVector CamEnd = CamLoc + CamRot.Vector() * Range;
 
         FHitResult CamHit;
         FCollisionQueryParams CamParams;
         CamParams.AddIgnoredActor(this);
         CamParams.AddIgnoredActor(OwnerChar);
 
-        const bool bCamHit = GetWorld()->LineTraceSingleByChannel(CamHit, CamLoc, CamEnd, ECC_Pawn, CamParams);
+        const bool bCamHit = GetWorld()->LineTraceSingleByChannel(CamHit, CamLoc, CamEnd, ECC_Weapon, CamParams);
         AimPoint = bCamHit ? CamHit.ImpactPoint : CamEnd;
     }
     else
     {
-        AimPoint = OwnerChar->GetActorLocation() + ApplyAimSpread(OwnerChar->GetActorForwardVector()) * Range;
+        AimPoint = OwnerChar->GetActorLocation() + OwnerChar->GetActorForwardVector() * Range;
     }
 
     // 2단계: 총구 → 조준 목표 방향으로 실제 데미지 판정 트레이스
@@ -118,7 +127,7 @@ void ARangedWeapon::FireOnce()
     FCollisionQueryParams QueryParams;
     QueryParams.AddIgnoredActor(this);
     QueryParams.AddIgnoredActor(OwnerChar);
-    const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, QueryParams);
+    const bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Weapon, QueryParams);
 
     PlayFireSound();
     PlayFireMontage();
@@ -126,7 +135,13 @@ void ARangedWeapon::FireOnce()
 
     if (bHit && Hit.GetActor())
     {
-        UGameplayStatics::ApplyPointDamage(Hit.GetActor(), GunData.Damage, AimDir, Hit,
+        float FinalDamage = GunData.Damage;
+        if (const IWeaponHolder* Holder = Cast<IWeaponHolder>(GetOwner()))
+        {
+            FinalDamage *= Holder->GetOutgoingDamageMultiplier();
+        }
+
+        UGameplayStatics::ApplyPointDamage(Hit.GetActor(), FinalDamage, AimDir, Hit,
             OwnerChar->GetController(), this, nullptr);
     }
 
@@ -182,11 +197,4 @@ bool ARangedWeapon::CanReload() const
     return GunState != EGunState::Reloading
         && CurrentAmmo < GunData.MagazineSize
         && ReserveAmmo > 0;
-}
-
-FVector ARangedWeapon::ApplyAimSpread(const FVector& AimDir) const
-{
-    if (AimSpread <= 0.f) return AimDir;
-    float SpreadRad = FMath::DegreesToRadians(AimSpread);
-    return FMath::VRandCone(AimDir, SpreadRad);
 }

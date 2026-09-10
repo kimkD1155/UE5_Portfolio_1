@@ -12,6 +12,8 @@ class UBoxComponent;
 class UHealthComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHPChanged, float, CurrentHP, float, MaxHP);
+// 이 바리케이드가 파괴되는 순간 1회 브로드캐스트. GameMode 가 전멸 여부를 카운트한다.
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBarricadeDestroyed, ABarricade*, Barricade);
 
 UCLASS()
 class UE5_PORTFOLIO_1_API ABarricade : public AActor, public IInteractableInterface
@@ -40,6 +42,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Barricade")
 	FOnHPChanged OnHPChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Barricade")
+	FOnBarricadeDestroyed OnBarricadeDestroyed;
+
 	UFUNCTION(BlueprintPure, Category = "Barricade")
 	float GetCurrentHealth() const;
 
@@ -59,7 +64,15 @@ protected:
 	UFUNCTION()
 	void HandleDeath(AActor* DamageInstigator);
 
-	void OnBarricadeDestroyed();
+	// 바리케이드 체력 업그레이드 반영 — 최대 체력을 BaseMaxHealth * 배율 로 다시 설정
+	UFUNCTION()
+	void HandleUpgradesChanged();
+
+	// PlayerState 가 아직 없을 수 있어 재시도한다
+	void BindToPlayerState();
+
+	// 파괴 시 물리/충돌 정리
+	void ApplyDestroyedState();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* Mesh;
@@ -73,4 +86,13 @@ protected:
 	// E 키로 한 번 상호작용 시 회복되는 양
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barricade")
 	float RepairAmountPerInteract = 50.f;
+
+	// 업그레이드 0레벨 기준 최대 체력. 실제 최대 체력 = BaseMaxHealth * (1 + Lv*배율)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barricade")
+	float BaseMaxHealth = 90.f;
+
+	UPROPERTY()
+	TWeakObjectPtr<class AKangPlayerState> BoundPlayerState;
+
+	FTimerHandle BindRetryHandle;
 };

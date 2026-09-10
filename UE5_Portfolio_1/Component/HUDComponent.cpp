@@ -4,9 +4,12 @@
 #include "HUDComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
 #include "../Props/Barricade.h"
 #include "../Component/InventoryComponent.h"
 #include "../Weapon/RangedWeapon.h"
+#include "../Core/KangGameState.h"
+#include "../Manager/EnemyManager.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
@@ -97,6 +100,74 @@ void UHUDComponent::BeginPlay()
 				HandleWeaponEquipped(Current);
 			}
 		}
+	}
+
+	// 국면(낮/밤) UI
+	if (PhaseWidgetClass)
+	{
+		PhaseWidget = CreateWidget<UPhaseWidget>(GetWorld(), PhaseWidgetClass);
+		if (PhaseWidget)
+		{
+			PhaseWidget->AddToViewport();
+		}
+	}
+
+	if (AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>())
+	{
+		GS->OnPhaseChanged.AddDynamic(this, &UHUDComponent::HandlePhaseChanged);
+		GS->OnPhaseTimeChanged.AddDynamic(this, &UHUDComponent::HandlePhaseTimeChanged);
+		HandlePhaseChanged(GS->GetCurrentPhase()); // 초기 상태 반영
+	}
+
+	if (UEnemyManager* EM = GetWorld()->GetSubsystem<UEnemyManager>())
+	{
+		EM->OnEnemyCountChanged.AddUObject(this, &UHUDComponent::HandleEnemyCountChanged);
+	}
+}
+
+void UHUDComponent::HandlePhaseChanged(EGamePhase NewPhase)
+{
+	AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
+	const int32 DayNumber = GS ? GS->GetDayNumber() : 1;
+
+	if (PhaseWidget)
+	{
+		PhaseWidget->OnPhaseUpdated(NewPhase, DayNumber);
+	}
+
+	if (NewPhase == EGamePhase::GameOver)
+	{
+		if (!ResultWidget && ResultWidgetClass)
+		{
+			ResultWidget = CreateWidget<UResultWidget>(GetWorld(), ResultWidgetClass);
+			if (ResultWidget)
+			{
+				ResultWidget->AddToViewport(10);
+				ResultWidget->OnResultShown(DayNumber);
+			}
+		}
+
+		if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+		{
+			PC->SetShowMouseCursor(true);
+			PC->SetInputMode(FInputModeUIOnly());
+		}
+	}
+}
+
+void UHUDComponent::HandlePhaseTimeChanged(float Remaining)
+{
+	if (PhaseWidget)
+	{
+		PhaseWidget->OnTimeUpdated(Remaining);
+	}
+}
+
+void UHUDComponent::HandleEnemyCountChanged(int32 NewCount)
+{
+	if (PhaseWidget)
+	{
+		PhaseWidget->OnEnemiesLeftUpdated(NewCount);
 	}
 }
 

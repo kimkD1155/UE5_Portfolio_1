@@ -37,8 +37,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Heal(float Amount);
 
+	// 초당 재생량을 런타임에 설정한다 (체력 재생 업그레이드). 0 이하면 재생을 끈다.
+	// 값이 양수면 bRegenEnabled 도 자동으로 켜진다.
+	UFUNCTION(BlueprintCallable, Category = "Health|Regen")
+	void SetRegenPerSecond(float NewRate);
+
 	// 생성자 또는 스폰 직후에 최대 체력을 설정 (기본적으로 현재 체력도 가득 채움)
 	void SetMaxHealth(float NewMaxHealth, bool bFillToMax = true);
+
+	// OnTakeAnyDamage 자동 바인딩 여부를 소유자가 결정한다.
+	// 부위별 데미지 배율처럼 소유자가 직접 데미지를 해석해야 하는 경우 false 로 끄고
+	// ApplyDamage() 를 직접 호출한다. 반드시 컴포넌트 BeginPlay 이전(생성자)에서 호출할 것.
+	void SetBindToOwnerDamage(bool bInBind) { bBindToOwnerDamage = bInBind; }
 
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetHealth() const { return Health; }
@@ -72,9 +82,31 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Health")
 	float Health = 0.f;
 
+	// ── 체력 재생 (기본 꺼짐. 플레이어가 업그레이드로 켠다) ──────────
+	UPROPERTY(EditAnywhere, Category = "Health|Regen")
+	bool bRegenEnabled = false;
+
+	UPROPERTY(EditAnywhere, Category = "Health|Regen", meta = (ClampMin = "0.0"))
+	float RegenPerSecond = 0.f;
+
+	// 마지막 피격 후 이 시간이 지나야 재생을 시작한다
+	UPROPERTY(EditAnywhere, Category = "Health|Regen", meta = (ClampMin = "0.0"))
+	float RegenStartDelay = 4.f;
+
+	UPROPERTY(EditAnywhere, Category = "Health|Regen", meta = (ClampMin = "0.05"))
+	float RegenTickInterval = 0.5f;
+
 private:
 	bool bIsDead = false;
 
 	// 체력 변경의 단일 통로: 클램프된 값 반영 + 델리게이트 브로드캐스트 + 사망 처리
 	void SetHealth(float NewHealth, AActor* DamageInstigator);
+
+	// 재생 타이머 (Tick 대신 타이머 사용)
+	FTimerHandle RegenDelayTimerHandle;
+	FTimerHandle RegenTickTimerHandle;
+	void ScheduleRegenAfterDelay();
+	void BeginRegenTicking();
+	void RegenTick();
+	void StopRegen();
 };

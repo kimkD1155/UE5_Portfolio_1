@@ -46,6 +46,12 @@ void AShop::Interact_Implementation(ACharacter* Interactor)
 	ShopWidget->SetVisibility(bIsVisible ? ESlateVisibility::Hidden : ESlateVisibility::Visible);
 	bIsShopOpen = !bIsVisible;
 
+	// 열 때 최신 업그레이드 레벨/비용으로 목록을 갱신
+	if (bIsShopOpen)
+	{
+		ShopWidget->InitShop(this);
+	}
+
 	APlayerController* PC = Cast<APlayerController>(Interactor->GetController());
 	if (!PC) return;
 
