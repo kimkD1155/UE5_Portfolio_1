@@ -37,16 +37,9 @@ void ARangedWeapon::StartFire()
 
     if (GunData.bAutomatic)
     {
-        // 소유자의 연사 속도 배율만큼 발사 간격을 줄인다 (업그레이드)
-        float Interval = GunData.FireRate;
-        if (const IWeaponHolder* Holder = Cast<IWeaponHolder>(GetOwner()))
-        {
-            Interval = GunData.FireRate / FMath::Max(Holder->GetFireRateMultiplier(), 0.01f);
-        }
-
-        // 첫 발은 즉시, 이후 Interval 간격으로 반복
+        // 첫 발은 즉시, 이후 실제 발사 간격(연사속도 배율 반영)으로 반복
         GetWorldTimerManager().SetTimer(FireTimerHandle, this, &ARangedWeapon::FireOnce,
-            FMath::Max(Interval, 0.01f), true, 0.f);
+            GetEffectiveFireInterval(), true, 0.f);
     }
     else
     {
@@ -135,13 +128,7 @@ void ARangedWeapon::FireOnce()
 
     if (bHit && Hit.GetActor())
     {
-        float FinalDamage = GunData.Damage;
-        if (const IWeaponHolder* Holder = Cast<IWeaponHolder>(GetOwner()))
-        {
-            FinalDamage *= Holder->GetOutgoingDamageMultiplier();
-        }
-
-        UGameplayStatics::ApplyPointDamage(Hit.GetActor(), FinalDamage, AimDir, Hit,
+        UGameplayStatics::ApplyPointDamage(Hit.GetActor(), GetEffectiveDamage(), AimDir, Hit,
             OwnerChar->GetController(), this, nullptr);
     }
 
@@ -197,4 +184,24 @@ bool ARangedWeapon::CanReload() const
     return GunState != EGunState::Reloading
         && CurrentAmmo < GunData.MagazineSize
         && ReserveAmmo > 0;
+}
+
+float ARangedWeapon::GetEffectiveDamage() const
+{
+    float Damage = GunData.Damage;
+    if (const IWeaponHolder* Holder = Cast<IWeaponHolder>(GetOwner()))
+    {
+        Damage *= Holder->GetOutgoingDamageMultiplier();
+    }
+    return Damage;
+}
+
+float ARangedWeapon::GetEffectiveFireInterval() const
+{
+    float Interval = GunData.FireRate;
+    if (const IWeaponHolder* Holder = Cast<IWeaponHolder>(GetOwner()))
+    {
+        Interval = GunData.FireRate / FMath::Max(Holder->GetFireRateMultiplier(), 0.01f);
+    }
+    return FMath::Max(Interval, 0.01f);
 }

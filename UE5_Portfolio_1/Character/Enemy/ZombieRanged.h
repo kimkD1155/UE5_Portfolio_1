@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../Character/EnemyCharacter.h"
+#include "EnemyCharacter.h"
 #include "ZombieRanged.generated.h"
 
 

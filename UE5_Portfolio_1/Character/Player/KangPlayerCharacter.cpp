@@ -7,22 +7,23 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 // ────────── 커스텀 ──────────
-#include "../Weapon/WeaponBase.h"
-#include "../Weapon/RangedWeapon.h"
-#include "../Component/HUDComponent.h"
-#include "../Component/InteractionComponent.h"
-#include "../Component/InventoryComponent.h"
-#include "../Component/HealthComponent.h"
-#include "../Component/CombatComponent.h"
-#include "../Core/KangPlayerState.h"
-#include "../Core/KangPlayerController.h"
-#include "../Core/KangPlayerGameModeBase.h"
-#include "../Core/UpgradeType.h"
-#include "../Data/UpgradeTable.h"
-#include "../Props/Shop.h"
+#include "../../Weapon/WeaponBase.h"
+#include "../../Weapon/RangedWeapon.h"
+#include "../../Component/HUDComponent.h"
+#include "../../Component/InteractionComponent.h"
+#include "../../Component/InventoryComponent.h"
+#include "../../Component/HealthComponent.h"
+#include "../../Component/CombatComponent.h"
+#include "../../Core/KangPlayerState.h"
+#include "../../Core/KangPlayerController.h"
+#include "../../Core/KangPlayerGameModeBase.h"
+#include "../../Core/KangGameState.h"
+#include "../../Core/UpgradeType.h"
+#include "../../Data/UpgradeTable.h"
+#include "Engine/Engine.h"
+#include "DrawDebugHelpers.h"
 
 
 AKangPlayerCharacter::AKangPlayerCharacter()
@@ -114,6 +115,68 @@ void AKangPlayerCharacter::Tick(float DeltaTime)
 	FollowCamera->SetFieldOfView(
 		FMath::FInterpTo(FollowCamera->FieldOfView, TargetFOV, DeltaTime, AimInterpSpeed)
 	);
+
+	DrawDebugStatsOverlay();
+}
+
+void AKangPlayerCharacter::DrawDebugStatsOverlay() const
+{
+#if ENABLE_DRAW_DEBUG
+	if (!bShowDebugStatsOverlay || !GEngine) return;
+
+	const AKangPlayerState* PS = GetPlayerState<AKangPlayerState>();
+	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
+
+	// ── 일차 / 국면 ──────────────────────────────────────────
+	if (GS)
+	{
+		FString PhaseName;
+		switch (GS->GetCurrentPhase())
+		{
+		case EGamePhase::Day:      PhaseName = TEXT("DAY (수색)");   break;
+		case EGamePhase::Night:    PhaseName = TEXT("NIGHT (전투)"); break;
+		case EGamePhase::GameOver: PhaseName = TEXT("GAME OVER");    break;
+		default:                   PhaseName = TEXT("-");            break;
+		}
+		const int32 Remaining = FMath::Max(0, FMath::CeilToInt(GS->GetPhaseTimeRemaining()));
+		GEngine->AddOnScreenDebugMessage(9000, 0.f, FColor::Cyan, FString::Printf(
+			TEXT("Day %d · %s · %02d:%02d 남음"),
+			GS->GetDayNumber(), *PhaseName, Remaining / 60, Remaining % 60));
+	}
+
+	// ── 체력 ─────────────────────────────────────────────────
+	if (HealthComponent)
+	{
+		GEngine->AddOnScreenDebugMessage(9001, 0.f, FColor::Green, FString::Printf(
+			TEXT("HP %.0f / %.0f   재생 %.2f/s"),
+			HealthComponent->GetHealth(), HealthComponent->GetMaxHealth(), HealthComponent->GetRegenPerSecond()));
+	}
+
+	// ── 무기(실 데미지 / 연사속도) ───────────────────────────
+	if (const ARangedWeapon* Weapon = Cast<ARangedWeapon>(GetActiveWeapon()))
+	{
+		const FGunData& Gun = Weapon->GetGunData();
+		GEngine->AddOnScreenDebugMessage(9002, 0.f, FColor::Yellow, FString::Printf(
+			TEXT("%s   DMG %.1f → %.1f (x%.2f)   간격 %.2fs (x%.2f)"),
+			*Weapon->GetWeaponName().ToString(), Gun.Damage, Weapon->GetEffectiveDamage(),
+			GetOutgoingDamageMultiplier(), Weapon->GetEffectiveFireInterval(), GetFireRateMultiplier()));
+	}
+
+	// ── 업그레이드 레벨 · 코인 ───────────────────────────────
+	if (PS)
+	{
+		GEngine->AddOnScreenDebugMessage(9003, 0.f, FColor::Orange, FString::Printf(
+			TEXT("업그레이드  공격력 Lv%d(x%.2f)  공격속도 Lv%d(x%.2f)  바리케이드체력 Lv%d(x%.2f)  체력재생 Lv%d  아군공격력 Lv%d(x%.2f)"),
+			PS->GetUpgradeLevel(EUpgradeType::PlayerDamage), PS->GetUpgradeMultiplier(EUpgradeType::PlayerDamage),
+			PS->GetUpgradeLevel(EUpgradeType::PlayerFireRate), PS->GetUpgradeMultiplier(EUpgradeType::PlayerFireRate),
+			PS->GetUpgradeLevel(EUpgradeType::BarricadeHealth), PS->GetUpgradeMultiplier(EUpgradeType::BarricadeHealth),
+			PS->GetUpgradeLevel(EUpgradeType::HealthRegen),
+			PS->GetUpgradeLevel(EUpgradeType::AllyDamage), PS->GetUpgradeMultiplier(EUpgradeType::AllyDamage)));
+
+		GEngine->AddOnScreenDebugMessage(9004, 0.f, FColor::White, FString::Printf(
+			TEXT("코인 %d"), PS->GetCoin()));
+	}
+#endif
 }
 
 void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -138,6 +201,7 @@ void AKangPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EIC->BindAction(Num3Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon3);
 		EIC->BindAction(Num4Action, ETriggerEvent::Started, this, &AKangPlayerCharacter::EquipWeapon4);
 		EIC->BindAction(EscapeAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::Escape);
+		EIC->BindAction(MenuAction, ETriggerEvent::Started, this, &AKangPlayerCharacter::ToggleMenu);
 	}
 	else
 	{
@@ -339,19 +403,17 @@ void AKangPlayerCharacter::EquipWeapon4(const FInputActionValue& Value)
 
 void AKangPlayerCharacter::Escape(const FInputActionValue& Value)
 {
-	// 열려있는 상점 찾아서 닫기
-	TArray<AActor*> Shops;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AShop::StaticClass(), Shops);
-	for (AActor* Actor : Shops)
+	// 커맨드 메뉴가 열려있으면 그것부터 닫고, 아니면 일시정지를 토글한다.
+	if (HUDComponent->IsMenuOpen())
 	{
-		if (AShop* Shop = Cast<AShop>(Actor))
-		{
-			if (Shop->IsShopOpen())
-			{
-				Shop->CloseShop();
-				return;
-			}
-		}
+		HUDComponent->CloseMenu();
+		return;
 	}
+	HUDComponent->TogglePause();
+}
+
+void AKangPlayerCharacter::ToggleMenu(const FInputActionValue& Value)
+{
+	HUDComponent->ToggleMenu();
 }
 

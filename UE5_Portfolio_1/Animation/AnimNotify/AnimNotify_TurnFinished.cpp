@@ -2,7 +2,7 @@
 
 
 #include "AnimNotify_TurnFinished.h"
-#include "../../Character/KangPlayerCharacter.h"
+#include "../../Character/Player/KangPlayerCharacter.h"
 
 void UAnimNotify_TurnFinished::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
@@ -10,7 +10,7 @@ void UAnimNotify_TurnFinished::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 	AKangPlayerCharacter* PlayerCharacter = Cast<AKangPlayerCharacter>(MeshComp->GetOwner());
 	if (PlayerCharacter)
 	{
-		//PlayerCharacter->SetTurnDirection(ETurnDirection::None);
+		PlayerCharacter->SetTurnDirection(ETurnDirection::None);
 	}
 }
 

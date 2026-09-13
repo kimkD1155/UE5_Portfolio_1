@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "../../Manager/ActorPoolSubsystem.h"
 
 AZombieRanged::AZombieRanged()
 {
@@ -25,18 +26,20 @@ void AZombieRanged::SpawnProjectile()
 {
 	if (!ProjectileClass) return;
 
-	FActorSpawnParameters Params;
-	Params.Owner = this;
-	Params.Instigator = this;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	UActorPoolSubsystem* Pool = GetWorld()->GetSubsystem<UActorPoolSubsystem>();
+	if (!Pool) return;
 
-	AEnemyProjectile* Projectile = GetWorld()->SpawnActor<AEnemyProjectile>(
-		ProjectileClass,
-		GetMesh()->GetSocketTransform(ProjectileSpawnSocket),
-		Params);
+	const FTransform SocketTransform = GetMesh()->GetSocketTransform(ProjectileSpawnSocket);
+
+	// Destroy/SpawnActor 대신 풀에서 재사용 — 원거리 좀비가 많을수록 스폰/파괴 비용을 아낀다.
+	AEnemyProjectile* Projectile = Pool->Acquire<AEnemyProjectile>(
+		ProjectileClass, SocketTransform.GetLocation(), SocketTransform.Rotator());
 
 	if (Projectile)
 	{
+		Projectile->SetOwner(this);
+		Projectile->SetInstigator(this);
+
 		Projectile->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, ProjectileSpawnSocket);
 		Projectile->CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Projectile->ProjectileMovement->Deactivate(); // 아직 안 날아감

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "../Weapon/WeaponBase.h"
-#include "../Ally/AllyBase.h"
+#include "../Character/Ally/AllyBase.h"
 #include "../Core/UpgradeType.h"
 #include "ShopItemData.generated.h"
 

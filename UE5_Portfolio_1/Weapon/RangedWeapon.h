@@ -86,6 +86,14 @@ public:
     UFUNCTION(BlueprintPure)
     int32 GetReserveAmmo() const { return ReserveAmmo; }
 
+    // 소유자(IWeaponHolder)의 배율까지 적용한 실제 데미지 / 발사 간격.
+    // FireOnce/StartFire 와 디버그 표시가 같은 계산을 공유한다.
+    UFUNCTION(BlueprintPure, Category = "Gun")
+    float GetEffectiveDamage() const;
+
+    UFUNCTION(BlueprintPure, Category = "Gun")
+    float GetEffectiveFireInterval() const;
+
 
 protected:
     virtual void BeginPlay() override;

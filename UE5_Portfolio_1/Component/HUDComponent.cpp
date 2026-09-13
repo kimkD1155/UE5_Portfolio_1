@@ -9,6 +9,10 @@
 #include "../Component/InventoryComponent.h"
 #include "../Weapon/RangedWeapon.h"
 #include "../Core/KangGameState.h"
+#include "../Core/KangPlayerGameModeBase.h"
+#include "../Core/KangPlayerState.h"
+#include "../Core/SaveGameSubsystem.h"
+#include "Engine/GameInstance.h"
 #include "../Manager/EnemyManager.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -123,6 +127,28 @@ void UHUDComponent::BeginPlay()
 	{
 		EM->OnEnemyCountChanged.AddUObject(this, &UHUDComponent::HandleEnemyCountChanged);
 	}
+
+	// 커맨드 메뉴(B) — 구 AShop 위젯과 동일하게 숨긴 채로 미리 만들어둔다.
+	if (MenuWidgetClass)
+	{
+		MenuWidget = CreateWidget<UShopWidget>(GetWorld(), MenuWidgetClass);
+		if (MenuWidget)
+		{
+			MenuWidget->AddToViewport();
+			MenuWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	// 일시정지 메뉴도 동일한 패턴
+	if (PauseWidgetClass)
+	{
+		PauseWidget = CreateWidget<UUserWidget>(GetWorld(), PauseWidgetClass);
+		if (PauseWidget)
+		{
+			PauseWidget->AddToViewport();
+			PauseWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
 }
 
 void UHUDComponent::HandlePhaseChanged(EGamePhase NewPhase)
@@ -133,6 +159,12 @@ void UHUDComponent::HandlePhaseChanged(EGamePhase NewPhase)
 	if (PhaseWidget)
 	{
 		PhaseWidget->OnPhaseUpdated(NewPhase, DayNumber);
+	}
+
+	// 새 낮이 시작되면 수색 1회 제한을 초기화 (구 AScavengePoint::HandlePhaseChanged 로직)
+	if (NewPhase == EGamePhase::Day && MenuWidget)
+	{
+		MenuWidget->ResetDailyScavenge();
 	}
 
 	if (NewPhase == EGamePhase::GameOver)
@@ -241,4 +273,121 @@ void UHUDComponent::UpdateCoinUI(int32 CurrentCoin)
 {
 	if (!CoinWidget) return;
 	CoinWidget->UpdateCoin(CurrentCoin);
+}
+
+bool UHUDComponent::IsMenuOpen() const
+{
+	return MenuWidget && MenuWidget->GetVisibility() == ESlateVisibility::Visible;
+}
+
+void UHUDComponent::ToggleMenu()
+{
+	if (!MenuWidget) return;
+
+	if (IsMenuOpen())
+	{
+		CloseMenu();
+		return;
+	}
+
+	if (IsPaused()) return; // 일시정지 중엔 커맨드 메뉴를 열지 않는다 (동시에 두 메뉴가 뜨는 것 방지)
+
+	MenuWidget->SetVisibility(ESlateVisibility::Visible);
+	MenuWidget->RefreshCatalog();
+
+	if (APlayerController* PC = OwnerCharacter ? Cast<APlayerController>(OwnerCharacter->GetController()) : nullptr)
+	{
+		PC->SetShowMouseCursor(true);
+
+		// 위젯에 실제로 키보드 포커스를 줘야 위젯 자신의 On Key Down 이 확실히 불린다.
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(MenuWidget->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+	}
+}
+
+bool UHUDComponent::IsPaused() const
+{
+	return PauseWidget && PauseWidget->GetVisibility() == ESlateVisibility::Visible;
+}
+
+void UHUDComponent::TogglePause()
+{
+	if (!PauseWidget) return;
+
+	if (IsPaused())
+	{
+		ResumeGame();
+		return;
+	}
+
+	// B 메뉴가 열려있거나 이미 게임이 끝났으면 일시정지하지 않는다.
+	if (IsMenuOpen()) return;
+	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
+	if (GS && GS->IsGameOver()) return;
+
+	PauseWidget->SetVisibility(ESlateVisibility::Visible);
+
+	if (AKangPlayerGameModeBase* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AKangPlayerGameModeBase>() : nullptr)
+	{
+		GM->SetGamePaused(true);
+	}
+
+	if (APlayerController* PC = OwnerCharacter ? Cast<APlayerController>(OwnerCharacter->GetController()) : nullptr)
+	{
+		PC->SetShowMouseCursor(true);
+
+		// SetGamePaused 중에는 게임플레이 입력 바인딩(Enhanced Input 포함)이 기본적으로
+		// 처리되지 않는다. ESC로 닫는 것까지 포함해서 Pause 위젯 자신의 키 입력으로
+		// 처리해야 하므로, 반드시 이 위젯에 키보드 포커스를 줘야 한다.
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(PauseWidget->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+	}
+}
+
+void UHUDComponent::ResumeGame()
+{
+	if (!IsPaused()) return;
+
+	PauseWidget->SetVisibility(ESlateVisibility::Hidden);
+
+	if (AKangPlayerGameModeBase* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AKangPlayerGameModeBase>() : nullptr)
+	{
+		GM->SetGamePaused(false);
+	}
+
+	if (APlayerController* PC = OwnerCharacter ? Cast<APlayerController>(OwnerCharacter->GetController()) : nullptr)
+	{
+		PC->SetShowMouseCursor(false);
+		PC->SetInputMode(FInputModeGameOnly());
+	}
+}
+
+void UHUDComponent::SaveGame()
+{
+	USaveGameSubsystem* Save = GetWorld() && GetWorld()->GetGameInstance()
+		? GetWorld()->GetGameInstance()->GetSubsystem<USaveGameSubsystem>() : nullptr;
+	if (!Save) return;
+
+	const AKangPlayerState* PS = OwnerCharacter ? OwnerCharacter->GetPlayerState<AKangPlayerState>() : nullptr;
+	if (!PS) return;
+
+	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
+	Save->SaveRun(PS->GetCoin(), PS->GetUpgradeLevelsMap(), GS ? GS->GetDayNumber() : 1);
+}
+
+void UHUDComponent::CloseMenu()
+{
+	if (!IsMenuOpen()) return;
+
+	MenuWidget->SetVisibility(ESlateVisibility::Hidden);
+
+	if (APlayerController* PC = OwnerCharacter ? Cast<APlayerController>(OwnerCharacter->GetController()) : nullptr)
+	{
+		PC->SetShowMouseCursor(false);
+		PC->SetInputMode(FInputModeGameOnly());
+	}
 }

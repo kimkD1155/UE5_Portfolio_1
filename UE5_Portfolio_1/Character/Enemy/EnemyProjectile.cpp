@@ -1,10 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EnemyProjectile.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "../../Manager/ActorPoolSubsystem.h"
 
 // Sets default values
 AEnemyProjectile::AEnemyProjectile()
@@ -30,19 +31,20 @@ AEnemyProjectile::AEnemyProjectile()
 	ProjectileMesh->SetupAttachment(RootComponent);
 	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 충돌은 CollisionComp가 담당
 
-	SetLifeSpan(LifeSpan);
+	// 수명은 더 이상 SetLifeSpan(엔진의 자동 Destroy)에 맡기지 않는다 — 재사용될 때마다
+	// OnAcquiredFromPool 에서 우리 타이머로 다시 무장해서, 만료되면 풀로 반납한다.
 }
 
 // Called when the game starts or when spawned
 void AEnemyProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 void AEnemyProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	
+
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -51,6 +53,35 @@ void AEnemyProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AEnemyProjectile::OnAcquiredFromPool()
+{
+	ProjectileMovement->Velocity = FVector::ZeroVector;
+	ProjectileMovement->Deactivate();
+
+	GetWorldTimerManager().SetTimer(AutoReturnTimerHandle, this, &AEnemyProjectile::ReturnToPool, LifeSpan, false);
+}
+
+void AEnemyProjectile::OnReturnedToPool()
+{
+	GetWorldTimerManager().ClearTimer(AutoReturnTimerHandle);
+	ProjectileMovement->Deactivate();
+	ProjectileMovement->Velocity = FVector::ZeroVector;
+}
+
+void AEnemyProjectile::ReturnToPool()
+{
+	GetWorldTimerManager().ClearTimer(AutoReturnTimerHandle);
+
+	if (UActorPoolSubsystem* Pool = GetWorld() ? GetWorld()->GetSubsystem<UActorPoolSubsystem>() : nullptr)
+	{
+		Pool->Release(this);
+	}
+	else
+	{
+		Destroy(); // 안전망 — 풀 서브시스템이 없는 상황(에디터 프리뷰 등)에서도 새지 않게
+	}
 }
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
@@ -68,8 +99,5 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 		nullptr
 	);
 
-	
-	
-
-	Destroy();
+	ReturnToPool();
 }

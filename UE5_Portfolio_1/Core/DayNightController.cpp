@@ -15,10 +15,13 @@ ADayNightController::ADayNightController()
 	PrimaryActorTick.bStartWithTickEnabled = false; // 전환 중에만 틱
 
 	// 낮 기본값은 struct 기본값을 그대로 쓰고, 밤 기본값만 밤답게 덮어쓴다.
-	NightSettings.SunRotation = FRotator(20.f, -30.f, 0.f);   // 지평선 아래
-	NightSettings.SunIntensity = 0.05f;
-	NightSettings.SunColor = FLinearColor(0.15f, 0.2f, 0.4f);
-	NightSettings.SkyLightIntensity = 0.1f;
+	// 주의: Pitch 는 "빛이 향하는 방향" 이라 음수여야 아래로 비춘다 (양수를 쓰면 달빛이 위로
+	// 새어나가 지면·캐릭터에 직접광이 전혀 안 닿아 완전히 캄캄해진다 — 실제로 겪었던 버그).
+	// 게임플레이용 "밝은 밤"이라 사실적인 달빛 조도가 아니라 시인성 위주로 값을 올렸다.
+	NightSettings.SunRotation = FRotator(-30.f, 140.f, 0.f);  // 달처럼 하늘 위에서 비스듬히 비춤
+	NightSettings.SunIntensity = 1.5f;
+	NightSettings.SunColor = FLinearColor(0.45f, 0.55f, 0.9f); // 차가운 달빛 톤이지만 밝게
+	NightSettings.SkyLightIntensity = 0.6f;                    // 그림자 쪽도 완전히 안 죽게
 }
 
 void ADayNightController::BeginPlay()

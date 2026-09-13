@@ -4,17 +4,19 @@
 #include "EnemyCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "AIController.h"
-#include "../Core/EnemyAIController.h"
-#include "../Core/KangPlayerState.h"
-#include "../Component/HealthComponent.h"
-#include "../Animation/MontageHelper.h"
-#include "../UE5_Portfolio_1.h"
+#include "../../AI/EnemyAIController.h"
+#include "../../Core/KangPlayerState.h"
+#include "../../Component/HealthComponent.h"
+#include "../../Animation/MontageHelper.h"
+#include "../../Manager/EnemyManager.h"
+#include "../../Manager/ActorPoolSubsystem.h"
+#include "../../UE5_Portfolio_1.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimMontage.h"
-#include "../Props/Barricade.h"
+#include "../../Props/Barricade.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
 
@@ -179,12 +181,50 @@ void AEnemyCharacter::Die()
 		}
 	}
 
+	// 원래는 Destroy() 시점에 OnDestroyed 로 EnemyManager 가 알아챘는데, 풀링하면
+	// Destroy 가 안 불리므로 죽는 시점에 직접 알려준다. (Destroy 경로를 타도 중복 호출은
+	// UEnemyManager::UnregisterEnemy 안에서 조용히 무시되니 안전하다.)
+	if (UEnemyManager* Manager = GetWorld()->GetSubsystem<UEnemyManager>())
+	{
+		Manager->UnregisterEnemy(this);
+	}
+
+	// 재사용될 때 같은 컨트롤러로 되돌아갈 수 있도록 UnPossess 전에 캐싱해둔다.
+	CachedController = GetController();
 	if (AController* AC = GetController())
 	{
 		AC->UnPossess();
 	}
 	SetActorEnableCollision(false);
 	PlayDieMontage(DieMontage);
+}
+
+void AEnemyCharacter::OnAcquiredFromPool()
+{
+	// 죽어있던 상태를 전부 "새로 스폰된 것처럼" 되돌린다. (가시성/콜리전/Tick 은
+	// UActorPoolSubsystem::Acquire 이 이미 공통으로 처리한 뒤 이 함수를 부른다.)
+	HealthComponent->Revive();
+	bIsPlayingHitReaction = false;
+	HitActors.Empty();
+	DisableAttackHitBox(); // 만약 공격 판정 도중 죽었다면 켜진 채로 남아있을 수 있어 방어적으로 끔
+	GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
+
+	// AI 재점유. EnemyAIController::OnPossess 가 블랙보드/BT 를 처음부터 다시 돌려주므로
+	// 이전 생의 타겟/상태가 남아있을 걱정은 없다.
+	if (AController* ControllerToRepossess = CachedController.Get())
+	{
+		ControllerToRepossess->Possess(this);
+	}
+	else
+	{
+		SpawnDefaultController(); // 이미 possess 되어 있으면(첫 스폰) 조용히 무시된다.
+	}
+	CachedController = nullptr;
+}
+
+void AEnemyCharacter::OnReturnedToPool()
+{
+	// Die() 에서 코인 지급/UnPossess/콜리전 해제를 이미 다 처리했으므로 추가로 할 일은 없다.
 }
 
 AActor* AEnemyCharacter::GetTargetActor() const
@@ -251,7 +291,14 @@ void AEnemyCharacter::PlayHitReactionMontage(UAnimMontage* MontageToPlay)
 
 void AEnemyCharacter::OnDieMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	Destroy();
+	if (UActorPoolSubsystem* Pool = GetWorld() ? GetWorld()->GetSubsystem<UActorPoolSubsystem>() : nullptr)
+	{
+		Pool->Release(this);
+	}
+	else
+	{
+		Destroy(); // 안전망 — 풀 서브시스템이 없는 상황에서도 새지 않게
+	}
 }
 
 void AEnemyCharacter::OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted)

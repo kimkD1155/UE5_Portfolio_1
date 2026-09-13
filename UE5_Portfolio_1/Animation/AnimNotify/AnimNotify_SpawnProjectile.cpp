@@ -2,8 +2,8 @@
 
 
 #include "AnimNotify_SpawnProjectile.h"
-#include "../../Enemy/ZombieRanged.h"
-#include "../../Enemy/EnemyProjectile.h"
+#include "../../Character/Enemy/ZombieRanged.h"
+#include "../../Character/Enemy/EnemyProjectile.h"
 
 void UAnimNotify_SpawnProjectile::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {

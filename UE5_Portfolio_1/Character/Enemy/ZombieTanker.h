@@ -3,20 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../Character/EnemyCharacter.h"
-#include "ZombieNormal.generated.h"
+#include "EnemyCharacter.h"
+#include "ZombieTanker.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UE5_PORTFOLIO_1_API AZombieNormal : public AEnemyCharacter
+class UE5_PORTFOLIO_1_API AZombieTanker : public AEnemyCharacter
 {
 	GENERATED_BODY()
 	
 public:
-	AZombieNormal();
+	AZombieTanker();
 
-protected:
 	virtual void Attack() override;
 };

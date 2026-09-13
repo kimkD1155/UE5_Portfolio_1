@@ -4,7 +4,7 @@
 #include "BTTask_CustomMoveTo.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "../Character/EnemyCharacter.h"
+#include "../Character/Enemy/EnemyCharacter.h"
 #include "Navigation/PathFollowingComponent.h"
 
 UBTTask_CustomMoveTo::UBTTask_CustomMoveTo()

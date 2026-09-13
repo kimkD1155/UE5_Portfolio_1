@@ -11,7 +11,7 @@ enum class EGamePhase : uint8
 {
 	// 초기값 — 아직 첫 국면이 시작되지 않음. GameMode 가 BeginPlay 에서 Day/Night 로 바꾼다.
 	None,
-	// 수색 국면 — 스폰 정지, 낮. 플레이어가 AScavengePoint 를 돌며 코인을 모으고 상점을 이용한다.
+	// 수색 국면 — 스폰 정지, 낮. 플레이어가 B 커맨드 메뉴로 수색·구매를 진행한다.
 	Day,
 	// 전투 국면 — 스포너 가동, 밤. 좀비 웨이브가 바리케이드를 공격한다.
 	Night,

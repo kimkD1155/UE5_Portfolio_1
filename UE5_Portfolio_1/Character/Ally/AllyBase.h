@@ -1,10 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "../Interface/WeaponHolder.h"
+#include "../../Interface/WeaponHolder.h"
 #include "AllyBase.generated.h"
 
 class AWeaponBase;
@@ -30,6 +30,9 @@ public:
 	virtual AWeaponBase* GetActiveWeapon() const override { return EquippedWeapon; }
 	// 아군 공격력 업그레이드 배율 (플레이어의 런 진행도에서 조회)
 	virtual float GetOutgoingDamageMultiplier() const override;
+
+	// 일시정지 메뉴에서 호출 — 공격 타이머만 멈춘다 (적 감지 오버랩 자체는 유지).
+	void SetPaused(bool bPaused);
 
 	//────────────────────────── 컴포넌트 ──────────────────────────
 protected:
@@ -74,6 +77,15 @@ protected:
 	UPROPERTY()
 	AWeaponBase* EquippedWeapon;
 	void EquipDefaultWeapon();
+
+	// 기존 무기를 버리고 새 무기를 스폰+장착. EquipDefaultWeapon 과 상점 구매가 공유하는 실제 구현.
+	void EquipWeaponClass(TSubclassOf<AWeaponBase> WeaponClass);
+
+public:
+	// 상점에서 이 동료에게 새 무기를 사줬을 때 호출.
+	void SwapWeapon(TSubclassOf<AWeaponBase> NewWeaponClass) { EquipWeaponClass(NewWeaponClass); }
+
+protected:
 
 	void Attack(); // AttackTimer 로 주기 호출
 

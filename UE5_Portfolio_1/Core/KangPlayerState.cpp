@@ -3,6 +3,24 @@
 
 #include "KangPlayerState.h"
 #include "../Data/UpgradeTable.h"
+#include "SaveGameSubsystem.h"
+#include "Engine/GameInstance.h"
+
+void AKangPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// 메인 메뉴에서 "Load" 를 눌러서 왔을 때만 저장된 진행도를 반영한다.
+	// "새 게임" 으로 왔으면 기본값(Coin=100, 업그레이드 없음) 그대로 시작.
+	if (const USaveGameSubsystem* Save = GetGameInstance() ? GetGameInstance()->GetSubsystem<USaveGameSubsystem>() : nullptr)
+	{
+		if (Save->IsLoadRequested())
+		{
+			Coin = Save->GetSavedCoin();
+			UpgradeLevels = Save->GetSavedUpgradeLevels();
+		}
+	}
+}
 
 void AKangPlayerState::AddCoin(int32 Amount)
 {

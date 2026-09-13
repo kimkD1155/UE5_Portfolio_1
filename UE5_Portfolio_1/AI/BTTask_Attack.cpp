@@ -6,7 +6,7 @@
 #include "AIController.h"
 #include "../Props/Barricade.h"
 #include "Kismet/GameplayStatics.h"
-#include "../Character/EnemyCharacter.h"
+#include "../Character/Enemy/EnemyCharacter.h"
 
 #include "DrawDebugHelpers.h"
 

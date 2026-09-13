@@ -3,7 +3,8 @@
 
 #include "AllyManager.h"
 #include "Kismet/GameplayStatics.h"
-#include "../Ally/AllySpawnPoint.h"
+#include "../Character/Ally/AllySpawnPoint.h"
+#include "../Character/Ally/AllyBase.h"
 
 void UAllyManager::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -31,4 +32,17 @@ AAllySpawnPoint* UAllyManager::GetAvailableSpawnPoint()
         }
     }
     return nullptr; // 5개 다 찬 상태
+}
+
+void UAllyManager::RegisterAlly(AAllyBase* Ally)
+{
+    if (!Ally) return;
+
+    ActiveAllies.AddUnique(Ally);
+    Ally->OnDestroyed.AddDynamic(this, &UAllyManager::UnregisterAlly);
+}
+
+void UAllyManager::UnregisterAlly(AActor* Ally)
+{
+    ActiveAllies.Remove(Cast<AAllyBase>(Ally));
 }

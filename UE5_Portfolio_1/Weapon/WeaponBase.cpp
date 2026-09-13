@@ -4,7 +4,7 @@
 #include "WeaponBase.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "../Component/InventoryComponent.h"
-#include "../Character/KangPlayerCharacter.h"
+#include "../Character/Player/KangPlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
 

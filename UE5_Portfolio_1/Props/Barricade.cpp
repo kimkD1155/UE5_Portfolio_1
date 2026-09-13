@@ -11,6 +11,8 @@
 #include "../Component/HealthComponent.h"
 #include "../Core/KangPlayerState.h"
 #include "../Core/UpgradeType.h"
+#include "../AI/EnemyAIController.h"
+#include "Engine/StaticMesh.h"
 
 // Sets default values
 ABarricade::ABarricade()
@@ -30,6 +32,8 @@ ABarricade::ABarricade()
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	HealthComponent->SetMaxHealth(BaseMaxHealth);
+	// 자동 OnTakeAnyDamage 바인딩을 끄고 HandleTakeAnyDamage 에서 가해자를 걸러 직접 전달한다.
+	HealthComponent->SetBindToOwnerDamage(false);
 }
 
 // Called when the game starts or when spawned
@@ -39,8 +43,32 @@ void ABarricade::BeginPlay()
 
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ABarricade::HandleHealthChanged);
 	HealthComponent->OnDeath.AddDynamic(this, &ABarricade::HandleDeath);
+	OnTakeAnyDamage.AddDynamic(this, &ABarricade::HandleTakeAnyDamage);
 
 	BindToPlayerState();
+}
+
+void ABarricade::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (const UStaticMesh* StaticMeshAsset = Mesh->GetStaticMesh())
+	{
+		const FBoxSphereBounds LocalBounds = StaticMeshAsset->GetBounds();
+		BlockingVolume->SetBoxExtent(LocalBounds.BoxExtent);
+		BlockingVolume->SetRelativeLocation(LocalBounds.Origin);
+	}
+}
+
+void ABarricade::HandleTakeAnyDamage(AActor* /*DamagedActor*/, float Damage, const UDamageType* /*DamageType*/,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	if (Damage <= 0.f) return;
+
+	// 좀비의 컨트롤러(AEnemyAIController)가 가한 피해만 받는다.
+	if (!Cast<AEnemyAIController>(InstigatedBy)) return;
+
+	HealthComponent->ApplyDamage(Damage, DamageCauser);
 }
 
 void ABarricade::BindToPlayerState()

@@ -6,11 +6,16 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
+#include "Engine/Engine.h"
 #include "KangPlayerState.h"
 #include "KangGameState.h"
 #include "UpgradeType.h"
 #include "../Manager/EnemyManager.h"
+#include "../Manager/AllyManager.h"
 #include "../Props/Barricade.h"
+#include "../Spawning/EnemySpawner.h"
+#include "../Character/Ally/AllyBase.h"
+#include "SaveGameSubsystem.h"
 
 AKangPlayerGameModeBase::AKangPlayerGameModeBase()
 {
@@ -42,10 +47,35 @@ void AKangPlayerGameModeBase::BeginPlay()
 		}
 	}
 
+	AnnouncePhase(TEXT("🎮 게임 시작"), FColor::White, /*Key=*/9100);
+
+	// 메인 메뉴에서 "Load" 로 들어왔으면 저장된 일차부터 시작한다.
+	// (코인/업그레이드는 AKangPlayerState::BeginPlay 가 같은 플래그를 보고 자기 몫을 반영함)
+	if (USaveGameSubsystem* Save = GetGameInstance() ? GetGameInstance()->GetSubsystem<USaveGameSubsystem>() : nullptr)
+	{
+		if (Save->IsLoadRequested())
+		{
+			if (AKangGameState* GS = GetKangGameState())
+			{
+				GS->SetDayNumber(Save->GetSavedDayNumber());
+			}
+		}
+	}
+
 	StartPhase(bStartWithDay ? EGamePhase::Day : EGamePhase::Night);
 
 	GetWorldTimerManager().SetTimer(PhaseTickHandle, this, &AKangPlayerGameModeBase::TickPhase,
 		PhaseTickInterval, true);
+}
+
+void AKangPlayerGameModeBase::AnnouncePhase(const FString& Message, const FColor& Color, int32 Key, float Duration) const
+{
+#if ENABLE_DRAW_DEBUG
+	if (bShowPhaseAnnouncements && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(Key, Duration, Color, Message);
+	}
+#endif
 }
 
 void AKangPlayerGameModeBase::StartPhase(EGamePhase NewPhase)
@@ -60,6 +90,7 @@ void AKangPlayerGameModeBase::StartPhase(EGamePhase NewPhase)
 	case EGamePhase::Day:
 		CurrentPhaseDuration = DayDuration;
 		GS->SetSpawningActive(false);
+		AnnouncePhase(FString::Printf(TEXT("☀ DAY %d 시작 — 수색하세요"), GS->GetDayNumber()), FColor::Cyan, /*Key=*/9101);
 		break;
 
 	case EGamePhase::Night:
@@ -67,6 +98,7 @@ void AKangPlayerGameModeBase::StartPhase(EGamePhase NewPhase)
 		GS->SetPhase(NewPhase);
 		GS->UpdatePhaseTime(CurrentPhaseDuration);
 		GS->SetSpawningActive(true); // 국면 전환을 스포너가 본 뒤에 스폰 창을 연다
+		AnnouncePhase(FString::Printf(TEXT("🌙 NIGHT %d 시작 — 방어하세요"), GS->GetDayNumber()), FColor::Purple, /*Key=*/9101);
 		return;
 
 	case EGamePhase::GameOver:
@@ -74,7 +106,12 @@ void AKangPlayerGameModeBase::StartPhase(EGamePhase NewPhase)
 		GS->SetSpawningActive(false);
 		GS->SetPhase(NewPhase);
 		GetWorldTimerManager().ClearTimer(PhaseTickHandle);
+		AnnouncePhase(FString::Printf(TEXT("💀 게임 종료 — DAY %d 에서 전멸"), GS->GetDayNumber()), FColor::Red, /*Key=*/9101, /*Duration=*/8.f);
 		UE_LOG(LogTemp, Log, TEXT("[GameMode] GAME OVER — DAY %d"), GS->GetDayNumber());
+		if (USaveGameSubsystem* Save = GetGameInstance() ? GetGameInstance()->GetSubsystem<USaveGameSubsystem>() : nullptr)
+		{
+			Save->SaveBestDay(GS->GetDayNumber());
+		}
 		return;
 	}
 
@@ -176,6 +213,43 @@ void AKangPlayerGameModeBase::HandleBarricadeDestroyed(ABarricade* /*Barricade*/
 	{
 		UE_LOG(LogTemp, Log, TEXT("[GameMode] All barricades destroyed"));
 		TriggerGameOver();
+	}
+}
+
+void AKangPlayerGameModeBase::SetGamePaused(bool bPaused)
+{
+	if (bIsGamePaused == bPaused) return;
+	bIsGamePaused = bPaused;
+
+	UGameplayStatics::SetGamePaused(GetWorld(), bPaused);
+
+	// SetGamePaused 는 Tick 만 멈추고 FTimerManager 타이머는 그대로 굴러가므로
+	// (스포너 스폰 간격, 국면 카운트다운, 아군 자동 공격) 타이머를 각자 직접 멈춰야 한다.
+	if (bPaused)
+	{
+		GetWorldTimerManager().PauseTimer(PhaseTickHandle);
+	}
+	else
+	{
+		GetWorldTimerManager().UnPauseTimer(PhaseTickHandle);
+	}
+
+	TArray<AActor*> Spawners;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawner::StaticClass(), Spawners);
+	for (AActor* SpawnerActor : Spawners)
+	{
+		if (AEnemySpawner* Spawner = Cast<AEnemySpawner>(SpawnerActor))
+		{
+			Spawner->SetSpawningPaused(bPaused);
+		}
+	}
+
+	if (UAllyManager* AllyMgr = GetWorld()->GetSubsystem<UAllyManager>())
+	{
+		for (AAllyBase* Ally : AllyMgr->GetActiveAllies())
+		{
+			if (Ally) Ally->SetPaused(bPaused);
+		}
 	}
 }
 

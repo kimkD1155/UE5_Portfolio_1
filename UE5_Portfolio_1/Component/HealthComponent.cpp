@@ -58,6 +58,17 @@ void UHealthComponent::Heal(float Amount)
 	SetHealth(FMath::Clamp(Health + Amount, 0.f, MaxHealth), nullptr);
 }
 
+void UHealthComponent::Revive()
+{
+	StopRegen(); // 이전 생에서 돌던 재생 타이머 잔여물 정리
+
+	const float OldHealth = Health;
+	bIsDead = false;
+	Health = MaxHealth;
+
+	OnHealthChanged.Broadcast(Health, MaxHealth, Health - OldHealth, nullptr);
+}
+
 void UHealthComponent::SetRegenPerSecond(float NewRate)
 {
 	RegenPerSecond = FMath::Max(0.f, NewRate);

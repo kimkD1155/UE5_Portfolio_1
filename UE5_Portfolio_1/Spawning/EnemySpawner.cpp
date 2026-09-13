@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
 #include "../Manager/EnemyManager.h"
+#include "../Manager/ActorPoolSubsystem.h"
 #include "../Core/KangGameState.h"
 
 AEnemySpawner::AEnemySpawner()
@@ -69,6 +70,18 @@ void AEnemySpawner::StopSpawning()
 	GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
 }
 
+void AEnemySpawner::SetSpawningPaused(bool bPaused)
+{
+	if (bPaused)
+	{
+		GetWorldTimerManager().PauseTimer(SpawnTimerHandle);
+	}
+	else
+	{
+		GetWorldTimerManager().UnPauseTimer(SpawnTimerHandle);
+	}
+}
+
 void AEnemySpawner::SpawnEnemy()
 {
 	// 스폰 창이 닫혔으면 재예약하지 않는다 (StopSpawning 의 ClearTimer 와 이중 안전장치)
@@ -80,11 +93,11 @@ void AEnemySpawner::SpawnEnemy()
 	TSubclassOf<ACharacter> SelectedClass = SelectEnemyClass();
 	if (SelectedClass)
 	{
-		FActorSpawnParameters Params;
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-		ACharacter* SpawnedEnemy = GetWorld()->SpawnActor<ACharacter>(
-			SelectedClass, GetRandomSpawnLocation(), GetActorRotation(), Params);
+		// Destroy/SpawnActor 대신 풀에서 재사용 — 밤이 길어질수록 스폰/파괴 비용을 아낀다.
+		UActorPoolSubsystem* Pool = GetWorld()->GetSubsystem<UActorPoolSubsystem>();
+		ACharacter* SpawnedEnemy = Pool
+			? Pool->Acquire<ACharacter>(SelectedClass, GetRandomSpawnLocation(), GetActorRotation())
+			: nullptr;
 
 		if (SpawnedEnemy)
 		{

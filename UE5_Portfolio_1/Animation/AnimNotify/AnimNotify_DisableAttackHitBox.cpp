@@ -2,7 +2,7 @@
 
 
 #include "AnimNotify_DisableAttackHitBox.h"
-#include "../../Character/EnemyCharacter.h"
+#include "../../Character/Enemy/EnemyCharacter.h"
 
 void UAnimNotify_DisableAttackHitBox::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {

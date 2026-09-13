@@ -37,6 +37,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Heal(float Amount);
 
+	// 오브젝트 풀에서 재사용될 때 호출 — 죽은 상태를 완전히 되돌려 "새로 스폰된 것처럼" 만든다.
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void Revive();
+
 	// 초당 재생량을 런타임에 설정한다 (체력 재생 업그레이드). 0 이하면 재생을 끈다.
 	// 값이 양수면 bRegenEnabled 도 자동으로 켜진다.
 	UFUNCTION(BlueprintCallable, Category = "Health|Regen")
@@ -64,6 +68,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Health")
 	bool IsFullHealth() const { return Health >= MaxHealth; }
+
+	UFUNCTION(BlueprintPure, Category = "Health|Regen")
+	float GetRegenPerSecond() const { return bRegenEnabled ? RegenPerSecond : 0.f; }
 
 protected:
 	virtual void BeginPlay() override;

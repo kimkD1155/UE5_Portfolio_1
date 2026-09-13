@@ -44,6 +44,12 @@ protected:
 	void StartSpawning();
 	void StopSpawning();
 
+public:
+	// 일시정지 메뉴에서 호출 — 스폰 타이머만 멈추고 예약된 다음 스폰 시각은 유지한다.
+	void SetSpawningPaused(bool bPaused);
+
+protected:
+
 	void SpawnEnemy();
 	TSubclassOf<ACharacter> SelectEnemyClass(); // 가중치 기반 랜덤 선택
 	FVector GetRandomSpawnLocation();           // 박스 내 랜덤 위치

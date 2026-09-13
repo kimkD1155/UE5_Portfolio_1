@@ -33,6 +33,13 @@ public:
 	UFUNCTION()
 	void HandleBarricadeDestroyed(class ABarricade* Barricade);
 
+	// 일시정지 메뉴(HUDComponent)가 호출. 국면 타이머 + 스포너 + 아군 공격 타이머를 전부 멈춘다.
+	// (SetGamePaused 만으로는 FTimerManager 타이머가 안 멈추기 때문에 각 소유자에게 직접 알려야 한다.)
+	void SetGamePaused(bool bPaused);
+
+	UFUNCTION(BlueprintPure, Category = "Phase")
+	bool IsGamePaused() const { return bIsGamePaused; }
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Phase")
 	float DayDuration = 60.f;
@@ -56,6 +63,15 @@ protected:
 	void AdvanceToDay();
 	void TriggerGameOver();
 
+	// PIE 디버그: 게임 시작 / 낮·밤 전환 / 게임오버 시 화면에 큼직하게 안내 문구를 띄운다.
+	// 진짜 UI(UPhaseWidget/UResultWidget)를 아직 BP로 안 만들었어도 루프가 눈에 보이게.
+	// Shipping 빌드에서는 #if ENABLE_DRAW_DEBUG 로 컴파일 제외.
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool bShowPhaseAnnouncements = true;
+
+	// Key 를 다르게 주면 서로 다른 문구가 화면에서 동시에 겹쳐 보인다 (같은 Key 는 최신 것으로 갱신됨).
+	void AnnouncePhase(const FString& Message, const FColor& Color, int32 Key, float Duration = 4.f) const;
+
 	// UEnemyManager::OnEnemyCountChanged (비-다이나믹 멀티캐스트) 바인딩 대상
 	void HandleEnemyCountChanged(int32 NewCount);
 
@@ -67,6 +83,8 @@ protected:
 	float CurrentPhaseDuration = 0.f;
 
 	int32 AliveBarricadeCount = 0;
+
+	bool bIsGamePaused = false;
 
 	// ── 디버그 콘솔 명령 (~ 콘솔에서 호출) ─────────────────────
 	UFUNCTION(Exec)

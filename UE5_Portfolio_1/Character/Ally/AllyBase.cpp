@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "AllyBase.h"
@@ -10,13 +10,14 @@
 #include "DrawDebugHelpers.h"
 
 // 커스텀
-#include "../Character/EnemyCharacter.h"
-#include "../Weapon/WeaponBase.h"
-#include "../Weapon/RangedWeapon.h"
-#include "../Component/HealthComponent.h"
-#include "../Component/CombatComponent.h"
-#include "../Core/KangPlayerState.h"
-#include "../Core/UpgradeType.h"
+#include "../Enemy/EnemyCharacter.h"
+#include "../../Weapon/WeaponBase.h"
+#include "../../Weapon/RangedWeapon.h"
+#include "../../Component/HealthComponent.h"
+#include "../../Component/CombatComponent.h"
+#include "../../Core/KangPlayerState.h"
+#include "../../Core/UpgradeType.h"
+#include "../../Manager/AllyManager.h"
 #include "GameFramework/PlayerController.h"
 
 AAllyBase::AAllyBase()
@@ -46,6 +47,11 @@ void AAllyBase::BeginPlay()
 	EquipDefaultWeapon();
 
 	HealthComponent->OnDeath.AddDynamic(this, &AAllyBase::HandleDeath);
+
+	if (UAllyManager* Manager = GetWorld()->GetSubsystem<UAllyManager>())
+	{
+		Manager->RegisterAlly(this);
+	}
 }
 
 void AAllyBase::Tick(float DeltaTime)
@@ -73,6 +79,18 @@ void AAllyBase::Tick(float DeltaTime)
 		}
 	}
 #endif
+}
+
+void AAllyBase::SetPaused(bool bPaused)
+{
+	if (bPaused)
+	{
+		GetWorldTimerManager().PauseTimer(AttackTimerHandle);
+	}
+	else
+	{
+		GetWorldTimerManager().UnPauseTimer(AttackTimerHandle);
+	}
 }
 
 float AAllyBase::GetOutgoingDamageMultiplier() const
@@ -167,14 +185,27 @@ void AAllyBase::OnEnemyExitRange(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 void AAllyBase::EquipDefaultWeapon()
 {
-	if (!DefaultWeaponClass)
+	EquipWeaponClass(DefaultWeaponClass);
+}
+
+void AAllyBase::EquipWeaponClass(TSubclassOf<AWeaponBase> WeaponClass)
+{
+	if (!WeaponClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AllyBase: DefaultWeaponClass not set"));
+		UE_LOG(LogTemp, Warning, TEXT("AllyBase: EquipWeaponClass - no weapon class given"));
 		return;
 	}
 
+	// 기존 무기가 있으면 버리고 새로 스폰 (상점에서 무기를 바꿔 사줄 때 재사용됨)
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Unequip();
+		EquippedWeapon->Destroy();
+		EquippedWeapon = nullptr;
+	}
+
 	// 무기 스폰 (위치는 Equip()에서 소켓 기준으로 재조정됨)
-	AWeaponBase* Weapon = GetWorld()->SpawnActor<AWeaponBase>(DefaultWeaponClass);
+	AWeaponBase* Weapon = GetWorld()->SpawnActor<AWeaponBase>(WeaponClass);
 	if (!Weapon)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AllyBase: Failed to spawn weapon"));

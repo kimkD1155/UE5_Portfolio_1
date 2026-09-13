@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "../Weapon/WeaponBase.h"          // EWeaponType
-#include "../Interface/WeaponHolder.h"
+#include "../../Weapon/WeaponBase.h"          // EWeaponType
+#include "../../Interface/WeaponHolder.h"
 #include "KangPlayerCharacter.generated.h"
 
 // ─────────── 전방 선언 ───────────
@@ -78,6 +78,9 @@ protected:
 	UInputAction* Num4Action;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* EscapeAction;
+	// B 키 — 커맨드 메뉴(구매/수색/동료 무기 교체) 토글. 구 AShop/AScavengePoint 상호작용을 대체.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* MenuAction;
 
 protected:
 	void Move(const FInputActionValue& Value);
@@ -94,6 +97,7 @@ protected:
 	void EquipWeapon3(const FInputActionValue& Value);
 	void EquipWeapon4(const FInputActionValue& Value);
 	void Escape(const FInputActionValue& Value);
+	void ToggleMenu(const FInputActionValue& Value);
 
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void OnJumped_Implementation() override;
@@ -118,6 +122,13 @@ protected:
 	// (공격력/공격속도 배율은 매 발사 시점에 PlayerState 를 직접 조회하므로 여기서 처리하지 않는다.)
 	UFUNCTION()
 	void HandleUpgradesChanged();
+
+	// PIE 디버그: 화면 좌상단에 일차/국면/체력/무기 데미지·연사속도/업그레이드 레벨을 표시.
+	// #if ENABLE_DRAW_DEBUG 로 Shipping 빌드에서는 본문이 컴파일 제외됨.
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bShowDebugStatsOverlay = true;
+
+	void DrawDebugStatsOverlay() const;
 
 public:
 	// 컴포넌트 접근자

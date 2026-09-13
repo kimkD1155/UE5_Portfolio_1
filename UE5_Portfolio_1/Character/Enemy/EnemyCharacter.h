@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "../../Interface/Poolable.h"
 #include "EnemyCharacter.generated.h"
 
 class USphereComponent;
@@ -14,13 +15,17 @@ DECLARE_MULTICAST_DELEGATE(FOnAttackMontageEnded);
 
 
 UCLASS()
-class UE5_PORTFOLIO_1_API AEnemyCharacter : public ACharacter
+class UE5_PORTFOLIO_1_API AEnemyCharacter : public ACharacter, public IPoolable
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
 	AEnemyCharacter();
+
+	// IPoolable — UActorPoolSubsystem 이 재사용/반납 시점에 호출
+	virtual void OnAcquiredFromPool() override;
+	virtual void OnReturnedToPool() override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -132,6 +137,11 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	USphereComponent* AttackHitBox;
+
+	// Die() 에서 캐싱해뒀다가 풀에서 재사용될 때 같은 컨트롤러로 다시 Possess 한다
+	// (매번 새 AIController 를 만들지 않고 재활용).
+	UPROPERTY()
+	TWeakObjectPtr<AController> CachedController;
 
 	//────────────────────────────────────────────
 	// 몽타주 및 애니메이션 관련

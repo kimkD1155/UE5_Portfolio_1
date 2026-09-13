@@ -28,6 +28,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// 메시 애셋의 실제 바운즈에 맞춰 BlockingVolume 크기를 자동으로 맞춘다.
+	// 에디터에서 메시를 바꿔도 바로 반영되고, 메시 자체에 콜리전이 없어도 확실히 막는다.
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -63,6 +67,12 @@ protected:
 
 	UFUNCTION()
 	void HandleDeath(AActor* DamageInstigator);
+
+	// HealthComponent 자동 바인딩을 끄고 여기서 직접 받는다 — 좀비(AEnemyAIController)가
+	// 가한 피해만 받아들여, 플레이어/아군이 자기 바리케이드를 총으로 쏴서 깎는 걸 막는다.
+	UFUNCTION()
+	void HandleTakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
+		class AController* InstigatedBy, AActor* DamageCauser);
 
 	// 바리케이드 체력 업그레이드 반영 — 최대 체력을 BaseMaxHealth * 배율 로 다시 설정
 	UFUNCTION()

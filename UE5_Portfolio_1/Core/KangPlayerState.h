@@ -60,6 +60,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Upgrade")
 	UUpgradeTable* GetUpgradeTable() const { return UpgradeTable; }
 
+	// Pause 메뉴의 수동 Save 가 현재 진행도를 통째로 읽어갈 때 씀 (HUDComponent::SaveGame).
+	const TMap<EUpgradeType, int32>& GetUpgradeLevelsMap() const { return UpgradeLevels; }
+
 	// 비용을 지불하고 1레벨 올린다. 최대치이거나 코인이 부족하면 false.
 	UFUNCTION(BlueprintCallable, Category = "Upgrade")
 	bool TryPurchaseUpgrade(EUpgradeType Type);
@@ -67,6 +70,9 @@ public:
 	// 비용 무시하고 레벨을 더한다 (디버그/치트). 최대치로 클램프.
 	UFUNCTION(BlueprintCallable, Category = "Upgrade")
 	void AddUpgradeLevel(EUpgradeType Type, int32 Delta = 1);
+
+protected:
+	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY(VisibleAnywhere)
