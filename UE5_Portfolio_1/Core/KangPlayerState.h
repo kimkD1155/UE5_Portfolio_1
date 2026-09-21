@@ -8,6 +8,7 @@
 #include "KangPlayerState.generated.h"
 
 class UUpgradeTable;
+class AWeaponBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCoinChanged, int32, CurrentCoin);
 // 업그레이드 레벨이 바뀔 때 브로드캐스트. 무기/바리케이드/체력 컴포넌트가 구독해 스탯을 재계산한다.
@@ -71,6 +72,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Upgrade")
 	void AddUpgradeLevel(EUpgradeType Type, int32 Delta = 1);
 
+	// ── 무기 구매 잠금해제 ───────────────────────────────
+	// 한 번이라도 구매한 무기는 계속 해금 상태로 남아, 이후(다음 Day 포함)엔 무료로 재구매/재장착할 수 있다.
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	bool IsWeaponUnlocked(TSubclassOf<AWeaponBase> WeaponClass) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void UnlockWeapon(TSubclassOf<AWeaponBase> WeaponClass);
+
+	// Pause 메뉴의 수동 Save 가 현재 진행도를 통째로 읽어갈 때 씀 (HUDComponent::SaveGame).
+	const TArray<TSubclassOf<AWeaponBase>>& GetUnlockedWeapons() const { return UnlockedWeapons; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -80,4 +92,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	TMap<EUpgradeType, int32> UpgradeLevels;
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<TSubclassOf<AWeaponBase>> UnlockedWeapons;
 };

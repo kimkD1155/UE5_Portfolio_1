@@ -5,8 +5,9 @@
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
-#include "../Props/Barricade.h"
+#include "../Manager/BarricadeManager.h"
 #include "../Component/InventoryComponent.h"
+#include "../Component/CombatComponent.h"
 #include "../Weapon/RangedWeapon.h"
 #include "../Core/KangGameState.h"
 #include "../Core/KangPlayerGameModeBase.h"
@@ -14,14 +15,12 @@
 #include "../Core/SaveGameSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "../Manager/EnemyManager.h"
-#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UHUDComponent::UHUDComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false;
+	// 장전 진행률(원형 프로그레스바)을 매 프레임 크로스헤어 위젯에 밀어넣어야 해서 켜둔다.
+	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
 }
@@ -81,15 +80,14 @@ void UHUDComponent::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("BarricadeWidgetClass is not set in HUDComponent."));
 	}
 
-	TArray<AActor*> Barricades;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABarricade::StaticClass(), Barricades);
-	if (Barricades.Num() > 0)
+	// 여러 바리케이드가 하나의 공유 체력 풀을 쓰므로, 특정 인스턴스가 아니라
+	// UBarricadeManager 를 직접 구독한다.
+	if (BarricadeWidget)
 	{
-		ABarricade* Barricade = Cast<ABarricade>(Barricades[0]);
-		if (BarricadeWidget && Barricade)
+		if (UBarricadeManager* BM = GetWorld()->GetSubsystem<UBarricadeManager>())
 		{
-			BarricadeWidget->InitWidget(Barricade);
-			Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI);
+			BarricadeWidget->UpdateHP(BM->GetHealth(), BM->GetMaxHealth());
+			BM->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI);
 		}
 	}
 
@@ -104,6 +102,8 @@ void UHUDComponent::BeginPlay()
 				HandleWeaponEquipped(Current);
 			}
 		}
+
+		CombatComp = OwnerCharacter->FindComponentByClass<UCombatComponent>();
 	}
 
 	// 국면(낮/밤) UI
@@ -116,10 +116,26 @@ void UHUDComponent::BeginPlay()
 		}
 	}
 
+	// Day 안내판 — 아래의 초기 HandlePhaseChanged() 호출(및 GameMode가 이미 먼저 국면을
+	// 전환해뒀을 경우의 첫 브로드캐스트)이 이 위젯을 바로 써야 하므로, 국면 구독보다 먼저
+	// 만들어둔다. 순서가 바뀌면 게임 시작 직후의 첫 Night 전환(=Day 1 Start)을 놓친다.
+	if (DayPhaseAnnounceWidgetClass)
+	{
+		DayPhaseAnnounceWidget = CreateWidget<UDayPhaseAnnounceWidget>(GetWorld(), DayPhaseAnnounceWidgetClass);
+		if (DayPhaseAnnounceWidget)
+		{
+			DayPhaseAnnounceWidget->AddToViewport(50);
+			DayPhaseAnnounceWidget->OnQueueFinished.AddUObject(this, &UHUDComponent::HandleDayAnnounceFinished);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DayPhaseAnnounceWidgetClass is not set in HUDComponent."));
+	}
+
 	if (AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>())
 	{
 		GS->OnPhaseChanged.AddDynamic(this, &UHUDComponent::HandlePhaseChanged);
-		GS->OnPhaseTimeChanged.AddDynamic(this, &UHUDComponent::HandlePhaseTimeChanged);
 		HandlePhaseChanged(GS->GetCurrentPhase()); // 초기 상태 반영
 	}
 
@@ -149,6 +165,7 @@ void UHUDComponent::BeginPlay()
 			PauseWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
+
 }
 
 void UHUDComponent::HandlePhaseChanged(EGamePhase NewPhase)
@@ -161,10 +178,35 @@ void UHUDComponent::HandlePhaseChanged(EGamePhase NewPhase)
 		PhaseWidget->OnPhaseUpdated(NewPhase, DayNumber);
 	}
 
-	// 새 낮이 시작되면 수색 1회 제한을 초기화 (구 AScavengePoint::HandlePhaseChanged 로직)
-	if (NewPhase == EGamePhase::Day && MenuWidget)
+	// Day 시작/종료를 검은 화면 안내로 크게 알려준다. "시작"은 밤이 시작되는 순간, "종료"는
+	// 그 밤이 끝나 낮이 되는 순간 — 서로 다른 두 전환 시점에 각각 뜬다. GS 의 DayNumber 는
+	// 낮이 시작될 때 이미 다음 사이클 번호로 올라가 있으므로, "종료" 안내는 밤이 시작될 때
+	// 캐싱해둔 번호를 그대로 써서 같은 사이클끼리 번호가 맞물리게 한다.
+	if (DayPhaseAnnounceWidget && NewPhase == EGamePhase::Night)
 	{
-		MenuWidget->ResetDailyScavenge();
+		CurrentCycleDayNumber = DayNumber;
+		DayPhaseAnnounceWidget->ShowAnnouncement(
+			FText::FromString(FString::Printf(TEXT("Day %d Start"), CurrentCycleDayNumber)));
+		// 안내가 다 끝날 때까지(HandleDayAnnounceFinished) 웨이브/입력이 먼저 진행되지 않게 막는다.
+		PauseForDayAnnouncement();
+	}
+	else if (DayPhaseAnnounceWidget && NewPhase == EGamePhase::Day && LastPhase == EGamePhase::Night)
+	{
+		DayPhaseAnnounceWidget->ShowAnnouncement(
+			FText::FromString(FString::Printf(TEXT("Day %d End"), CurrentCycleDayNumber)));
+		// 낮이 시작될 때도 상점이 열리는 게 안내판 뒤로 가려지는 동안엔 입력이 먼저 들어가면 안 된다.
+		PauseForDayAnnouncement();
+	}
+	LastPhase = NewPhase;
+
+	// 낮이 시작되면 상점을 자동으로 열고, 밤/게임오버가 되면 닫아 구매를 막는다.
+	if (NewPhase == EGamePhase::Day)
+	{
+		OpenMenu();
+	}
+	else if (NewPhase == EGamePhase::Night || NewPhase == EGamePhase::GameOver)
+	{
+		CloseMenu();
 	}
 
 	if (NewPhase == EGamePhase::GameOver)
@@ -187,19 +229,47 @@ void UHUDComponent::HandlePhaseChanged(EGamePhase NewPhase)
 	}
 }
 
-void UHUDComponent::HandlePhaseTimeChanged(float Remaining)
-{
-	if (PhaseWidget)
-	{
-		PhaseWidget->OnTimeUpdated(Remaining);
-	}
-}
-
 void UHUDComponent::HandleEnemyCountChanged(int32 NewCount)
 {
 	if (PhaseWidget)
 	{
 		PhaseWidget->OnEnemiesLeftUpdated(NewCount);
+	}
+}
+
+void UHUDComponent::PauseForDayAnnouncement()
+{
+	// SetGamePaused()는 절대 쓰지 않는다 — 실측 결과 UGameplayStatics::SetGamePaused 가
+	// 안내판 위젯 자신의 FTimerManager 타이머까지 멈춰버려서, 화면이 "Day 1 Start"에서 영원히
+	// 멈춰버리는 문제가 있었다 (안내판 스스로 끝날 방법이 없어짐). 대신 스포너만 개별적으로
+	// 멈추고, 입력은 DisableInput으로 직접 막는다.
+	if (AKangPlayerGameModeBase* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AKangPlayerGameModeBase>() : nullptr)
+	{
+		GM->SetWaveSpawningPaused(true);
+	}
+
+	if (OwnerCharacter)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			OwnerCharacter->DisableInput(PC);
+		}
+	}
+}
+
+void UHUDComponent::HandleDayAnnounceFinished()
+{
+	if (AKangPlayerGameModeBase* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AKangPlayerGameModeBase>() : nullptr)
+	{
+		GM->SetWaveSpawningPaused(false);
+	}
+
+	if (OwnerCharacter)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			OwnerCharacter->EnableInput(PC);
+		}
 	}
 }
 
@@ -231,7 +301,10 @@ void UHUDComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	
+	if (CrosshairWidget && CombatComp)
+	{
+		CrosshairWidget->OnReloadProgressUpdated(CombatComp->IsReloading(), CombatComp->GetReloadProgress());
+	}
 }
 
 void UHUDComponent::ShowInteractHint(const FText& Text)
@@ -253,13 +326,6 @@ void UHUDComponent::UpdateAmmoUI(int32 CurrentAmmo, int32 ReserveAmmo, const FTe
 	AmmoWidget->UpdateAmmo(CurrentAmmo, ReserveAmmo);
 	AmmoWidget->UpdateWeaponName(WeaponName);
 	AmmoWidget->ShowAmmoUI();
-}
-
-void UHUDComponent::InitBarricadeUI(ABarricade* Barricade)
-{
-	if (!BarricadeWidget || !Barricade) return;
-	BarricadeWidget->InitWidget(Barricade);
-	Barricade->OnHPChanged.AddDynamic(this, &UHUDComponent::UpdateBarricadeUI); // 바인딩
 }
 
 void UHUDComponent::UpdateBarricadeUI(float CurrentHP, float MaxHP)
@@ -290,7 +356,18 @@ void UHUDComponent::ToggleMenu()
 		return;
 	}
 
-	if (IsPaused()) return; // 일시정지 중엔 커맨드 메뉴를 열지 않는다 (동시에 두 메뉴가 뜨는 것 방지)
+	if (IsPaused()) return; // 일시정지 중엔 상점 메뉴를 열지 않는다 (동시에 두 메뉴가 뜨는 것 방지)
+
+	// 밤에는 상점을 열 수 없다 — 구매는 낮에만 가능하다.
+	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
+	if (GS && GS->GetCurrentPhase() != EGamePhase::Day) return;
+
+	OpenMenu();
+}
+
+void UHUDComponent::OpenMenu()
+{
+	if (!MenuWidget || IsMenuOpen()) return;
 
 	MenuWidget->SetVisibility(ESlateVisibility::Visible);
 	MenuWidget->RefreshCatalog();
@@ -376,7 +453,7 @@ void UHUDComponent::SaveGame()
 	if (!PS) return;
 
 	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
-	Save->SaveRun(PS->GetCoin(), PS->GetUpgradeLevelsMap(), GS ? GS->GetDayNumber() : 1);
+	Save->SaveRun(PS->GetCoin(), PS->GetUpgradeLevelsMap(), GS ? GS->GetDayNumber() : 1, PS->GetUnlockedWeapons());
 }
 
 void UHUDComponent::CloseMenu()

@@ -29,8 +29,9 @@ struct FAllyWeaponOption
 };
 
 /**
- * B 키로 여는 커맨드 메뉴. 예전에는 AShop 액터에 상호작용해야 열렸지만,
- * 이제 액터 없이 이 위젯 하나로 구매/수색/동료 무기 교체를 전부 처리한다.
+ * 낮이 되면 HUDComponent 가 자동으로 여는 상점 위젯. 예전에는 AShop 액터에
+ * 상호작용해야 열렸지만, 이제 액터 없이 이 위젯 하나로 구매/동료 무기 교체를 전부 처리한다.
+ * 밤에는 HUDComponent 가 자동으로 닫아 구매를 막는다.
  * 카탈로그(ShopItems, AllyWeaponOptions)는 위젯 클래스 디폴트에서 편집한다.
  */
 UCLASS()
@@ -64,19 +65,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<FShopItemData> GetShopItems() const { return ShopItems; }
 
-	//────────────────────────── 수색 (구 AScavengePoint) ──────────────────────────
-	// 낮에만, 기본적으로 하루 1회 코인을 지급한다. 버튼 연결은 위젯 BP 쪽에서 한다.
-	UFUNCTION(BlueprintCallable, Category = "Scavenge")
-	bool Scavenge();
-
-	UFUNCTION(BlueprintPure, Category = "Scavenge")
-	bool CanScavengeNow() const;
-
-	UFUNCTION(BlueprintPure, Category = "Scavenge")
-	FText GetScavengeHintText() const;
-
-	// 낮 국면이 새로 시작될 때 HUDComponent 가 호출 — 하루 1회 제한을 초기화한다.
-	void ResetDailyScavenge() { bScavengedToday = false; }
+	// "전투 시작" 버튼에서 호출 — 낮 동안 플레이어가 직접 밤으로 넘어간다.
+	// 실제 국면 전환 규칙(낮인지 확인 등)은 GameMode 가 담당하고, 이 함수는 요청만 전달한다.
+	UFUNCTION(BlueprintCallable, Category = "Shop")
+	void StartNight();
 
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -95,13 +87,4 @@ protected:
 	// 동료 무기 교체 목록. 이번에 추가된 기능이라 선택적 바인딩.
 	UPROPERTY(meta = (BindWidgetOptional))
 	UVerticalBox* AllyWeaponList;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Scavenge", meta = (ClampMin = "0"))
-	int32 ScavengeCoinReward = 40;
-
-	// true = 낮마다 1회. false = 낮 동안 무제한.
-	UPROPERTY(EditDefaultsOnly, Category = "Scavenge")
-	bool bScavengeOncePerDay = true;
-
-	bool bScavengedToday = false;
 };

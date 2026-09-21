@@ -72,22 +72,6 @@ void UCombatComponent::FireOnce()
 	Weapon->FireSingle();
 }
 
-void UCombatComponent::StartAim()
-{
-	if (AWeaponBase* Weapon = GetActiveWeapon())
-	{
-		Weapon->StartAim();
-	}
-}
-
-void UCombatComponent::StopAim()
-{
-	if (AWeaponBase* Weapon = GetActiveWeapon())
-	{
-		Weapon->StopAim();
-	}
-}
-
 void UCombatComponent::Reload()
 {
 	ARangedWeapon* Weapon = GetActiveRangedWeapon();
@@ -116,9 +100,10 @@ void UCombatComponent::Reload()
 	const float MontageLen = MontageHelper::PlayWithEndCallback(
 		GetCharacterMesh(), Montage, this, &UCombatComponent::OnReloadMontageEnded);
 
+	const float ReloadTime = FMath::Max(Weapon->GetGunData().ReloadTime, 0.1f);
+
 	if (MontageLen <= 0.f)
 	{
-		const float ReloadTime = FMath::Max(Weapon->GetGunData().ReloadTime, 0.1f);
 		UE_LOG(LogTemp, Warning, TEXT("CombatComponent::Reload - 무기 CharacterAnimSet 의 ReloadMontage 미지정, %.1fs 타이머로 진행"), ReloadTime);
 
 		if (UWorld* World = GetWorld())
@@ -127,6 +112,19 @@ void UCombatComponent::Reload()
 				&UCombatComponent::FinishReloadByTimer, ReloadTime, false);
 		}
 	}
+
+	// 몽타주/타이머 어느 경로든 GetReloadProgress() 가 같은 기준으로 0~1 을 계산할 수 있도록 기록.
+	ReloadStartTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+	ReloadDuration = MontageLen > 0.f ? MontageLen : ReloadTime;
+}
+
+float UCombatComponent::GetReloadProgress() const
+{
+	if (!IsReloading() || ReloadDuration <= 0.f || !GetWorld())
+	{
+		return 0.f;
+	}
+	return FMath::Clamp((GetWorld()->GetTimeSeconds() - ReloadStartTime) / ReloadDuration, 0.f, 1.f);
 }
 
 void UCombatComponent::OnReloadMontageEnded(UAnimMontage* /*Montage*/, bool bInterrupted)
@@ -165,4 +163,10 @@ void UCombatComponent::HandleWeaponFired()
 	if (!Weapon) return;
 
 	MontageHelper::Play(GetCharacterMesh(), Weapon->GetCharacterFireMontage());
+
+	// 탄창이 비면 예비 탄약이 무한이라 항상 재장전이 가능하므로 자동으로 이어서 장전한다.
+	if (Weapon->GetCurrentAmmo() <= 0 && !IsReloading())
+	{
+		Reload();
+	}
 }

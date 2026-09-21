@@ -2,6 +2,7 @@
 
 #include "SaveGameSubsystem.h"
 #include "KangSaveGame.h"
+#include "../Weapon/WeaponBase.h"
 #include "Kismet/GameplayStatics.h"
 
 namespace
@@ -34,13 +35,15 @@ bool USaveGameSubsystem::HasSaveFile() const
 	return UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveUserIndex);
 }
 
-void USaveGameSubsystem::SaveRun(int32 InCoin, const TMap<EUpgradeType, int32>& InUpgradeLevels, int32 InDayNumber)
+void USaveGameSubsystem::SaveRun(int32 InCoin, const TMap<EUpgradeType, int32>& InUpgradeLevels, int32 InDayNumber,
+	const TArray<TSubclassOf<AWeaponBase>>& InUnlockedWeapons)
 {
 	if (!LoadedSave) LoadOrCreate();
 
 	LoadedSave->Coin = InCoin;
 	LoadedSave->UpgradeLevels = InUpgradeLevels;
 	LoadedSave->SavedDayNumber = InDayNumber;
+	LoadedSave->UnlockedWeapons = InUnlockedWeapons;
 	UGameplayStatics::SaveGameToSlot(LoadedSave, SaveSlotName, SaveUserIndex);
 }
 
@@ -66,6 +69,11 @@ TMap<EUpgradeType, int32> USaveGameSubsystem::GetSavedUpgradeLevels() const
 int32 USaveGameSubsystem::GetSavedDayNumber() const
 {
 	return LoadedSave ? LoadedSave->SavedDayNumber : 1;
+}
+
+TArray<TSubclassOf<AWeaponBase>> USaveGameSubsystem::GetSavedUnlockedWeapons() const
+{
+	return LoadedSave ? LoadedSave->UnlockedWeapons : TArray<TSubclassOf<AWeaponBase>>();
 }
 
 int32 USaveGameSubsystem::GetBestDayReached() const

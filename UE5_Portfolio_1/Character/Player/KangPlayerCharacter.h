@@ -22,14 +22,6 @@ class UCameraComponent;
 class UAnimMontage;
 struct FInputActionValue;
 
-UENUM(BlueprintType)
-enum class ETurnDirection : uint8
-{
-	None    UMETA(DisplayName = "None"),
-	Left    UMETA(DisplayName = "Left"),
-	Right   UMETA(DisplayName = "Right")
-};
-
 UCLASS()
 class UE5_PORTFOLIO_1_API AKangPlayerCharacter : public ACharacter, public IWeaponHolder
 {
@@ -147,35 +139,18 @@ public:
 public:
 	bool bIsAiming = false;
 	bool bIsFiring = false;
-	bool Turn = false;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Turn")
-	ETurnDirection TurnDirection = ETurnDirection::None;
 
 	float WalkSpeed = 450.f;
-	float AimYaw = 0.f;
 
-	UPROPERTY(EditAnywhere, Category = "Aim")
-	float MovingSpeedThreshold = 10.f; // 이 이상이면 "이동 중"으로 판정
-
-	bool bIsMoving = false;
-
-	void UpdateMovementState();
 	UFUNCTION(BlueprintPure)
 	bool GetbIsAiming() const { return bIsAiming; }
-	UFUNCTION(BlueprintPure)
-	bool GetIsMoving() const { return bIsMoving; }
-	UFUNCTION(BlueprintPure)
-	float GetAimYaw() const { return AimYaw; }
-	UFUNCTION(BlueprintPure)
-	bool CanTurn() const { return Turn; }
 
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	EWeaponType GetCurrentWeaponType() const;
-	UFUNCTION(BlueprintPure)
-	ETurnDirection GetTurnDirection() const { return TurnDirection; }
-	UFUNCTION(BlueprintPure)
-	ETurnDirection SetTurnDirection(ETurnDirection TD) { return TurnDirection = TD; }
+
+	// AWeaponBase::Equip() 이 참조 — 플레이어는 몸통 소켓 대신 여기 붙는다.
+	UFUNCTION(BlueprintPure, Category = "Components")
+	USceneComponent* GetWeaponMount() const { return WeaponMount; }
 
 	//────────────────────────── 카메라 / FOV (조준) ──────────────────────────
 protected:
@@ -185,9 +160,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
+	// 힙파이어 시 무기가 향하는 목표. 카메라의 자식이라 항상 화면상 같은 자리(오른쪽)에
+	// 무기가 보인다 (AWeaponBase::Equip, UpdateWeaponPose 참고).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	USceneComponent* WeaponMount;
+
+	// 조준(ADS) 시 무기의 스코프 소켓이 정렬되는 목표. 카메라 앞쪽에 위치해 총이 근접
+	// 클리핑으로 사라지지 않게 하며, BP_KangPlayer 에서 조준선이 화면 중앙(크로스헤어)과
+	// 맞도록 위치/회전을 직접 조정한다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	USceneComponent* AimMount;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Aim")
 	float DefaultFOV = 90.f;
 
+	// 조준(ADS) 시 시야를 좁혀 에임 지점에 집중된 느낌을 준다.
 	UPROPERTY(EditDefaultsOnly, Category = "Aim")
 	float AimFOV = 60.f;
 
@@ -197,13 +184,8 @@ protected:
 	// 사격/재장전 몽타주 → UCombatComponent, 교체 몽타주 → UInventoryComponent 가 담당.
 	// 이 클래스는 더 이상 무기 몽타주를 직접 재생하지 않는다.
 
-	//────────────────────────── 왼손 IK ──────────────────────────
-public:
-	UPROPERTY(BlueprintReadWrite, Category = "IK")
-	FTransform LeftHandIKTarget;
-
-	UPROPERTY(BlueprintReadWrite, Category = "IK")
-	bool bShouldUseLeftHandIK = false;
-
-	void UpdateLeftHandIK();
+	// 매 프레임 호출 — 무기(액터)의 실제 트랜스폼을 힙파이어(WeaponMount) 또는 조준
+	// (AimMount) 목표로 보간한다. bIsAiming 과 무관하게 항상 호출되어 진입/해제 양쪽 모두
+	// 스냅 없이 부드럽게 전환된다. Tick()에서만 호출된다.
+	void UpdateWeaponPose(AWeaponBase* Weapon, float DeltaTime) const;
 };

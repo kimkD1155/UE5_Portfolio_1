@@ -1,6 +1,5 @@
 #include "ShopWidget.h"
 #include "../Core/KangPlayerState.h"
-#include "../Core/KangGameState.h"
 #include "../Component/InventoryComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
@@ -9,6 +8,7 @@
 #include "../Manager/AllyManager.h"
 #include "../Character/Ally/AllyBase.h"
 #include "../Character/Ally/AllySpawnPoint.h"
+#include "../Core/KangPlayerGameModeBase.h"
 
 void UShopWidget::RefreshCatalog()
 {
@@ -35,14 +35,22 @@ void UShopWidget::RefreshCatalog()
 		int32 DisplayPrice = Item.Price;
 		int32 CurrentLevel = 0;
 		bool bMaxed = false;
+		bool bAlreadyOwned = false;
 		if (Item.ItemType == EShopItemType::Upgrade && PS)
 		{
 			CurrentLevel = PS->GetUpgradeLevel(Item.UpgradeType);
 			bMaxed = PS->IsUpgradeMaxed(Item.UpgradeType);
 			DisplayPrice = PS->GetUpgradeCost(Item.UpgradeType);
 		}
+		else if ((Item.ItemType == EShopItemType::Rifle || Item.ItemType == EShopItemType::Pistol)
+			&& Item.WeaponClass && PS && PS->IsWeaponUnlocked(Item.WeaponClass))
+		{
+			// 한 번 구매해 해금한 무기는 이후 계속 무료로 재구매(재장착)할 수 있다.
+			DisplayPrice = 0;
+			bAlreadyOwned = true;
+		}
 
-		ItemWidget->InitItem(Item, i, DisplayPrice, CurrentLevel, bMaxed);
+		ItemWidget->InitItem(Item, i, DisplayPrice, CurrentLevel, bMaxed, bAlreadyOwned);
 		ItemWidget->OnBuyClicked.AddDynamic(this, &UShopWidget::BuyItem);
 
 		switch (Item.ItemType)
@@ -115,12 +123,16 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 		return;
 	}
 
-	if (!PS->SpendCoin(Item.Price))
+	const bool bIsWeapon = (Item.ItemType == EShopItemType::Rifle || Item.ItemType == EShopItemType::Pistol) && Item.WeaponClass;
+	// 이미 해금한 무기는 재구매(재장착) 시 코인을 받지 않는다.
+	const bool bFreeRepurchase = bIsWeapon && PS->IsWeaponUnlocked(Item.WeaponClass);
+
+	if (!bFreeRepurchase && !PS->SpendCoin(Item.Price))
 	{
 		return;
 	}
 
-	if ((Item.ItemType == EShopItemType::Rifle || Item.ItemType == EShopItemType::Pistol) && Item.WeaponClass)
+	if (bIsWeapon)
 	{
 		ACharacter* Player = Cast<ACharacter>(PC->GetPawn());
 		if (!Player) return;
@@ -133,8 +145,11 @@ void UShopWidget::BuyItem(int32 ItemIndex)
 
 		if (Weapon)
 		{
+			// 총은 한 번에 하나만 소유 — PickupWeapon 이 기존에 들고 있던 무기를 전부 정리하고 이걸로 대체한다.
 			UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
 			if (Inventory) Inventory->PickupWeapon(Weapon);
+			PS->UnlockWeapon(Item.WeaponClass);
+			RefreshCatalog(); // 방금 해금됐으니 가격 표시("무료")를 즉시 반영
 		}
 	}
 	else if (Item.ItemType == EShopItemType::Ally && Item.AllyClass)
@@ -188,37 +203,10 @@ void UShopWidget::BuyAllyWeapon(int32 CombinedIndex)
 	RefreshCatalog();
 }
 
-bool UShopWidget::CanScavengeNow() const
+void UShopWidget::StartNight()
 {
-	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
-	if (!GS || GS->GetCurrentPhase() != EGamePhase::Day) return false;
-	if (bScavengeOncePerDay && bScavengedToday) return false;
-	return true;
-}
-
-bool UShopWidget::Scavenge()
-{
-	if (!CanScavengeNow()) return false;
-
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	AKangPlayerState* PS = PC ? PC->GetPlayerState<AKangPlayerState>() : nullptr;
-	if (!PS) return false;
-
-	PS->AddCoin(ScavengeCoinReward);
-	bScavengedToday = true;
-	return true;
-}
-
-FText UShopWidget::GetScavengeHintText() const
-{
-	const AKangGameState* GS = GetWorld() ? GetWorld()->GetGameState<AKangGameState>() : nullptr;
-	if (GS && GS->GetCurrentPhase() != EGamePhase::Day)
+	if (AKangPlayerGameModeBase* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AKangPlayerGameModeBase>() : nullptr)
 	{
-		return FText::FromString(TEXT("밤에는 수색할 수 없다"));
+		GM->RequestStartNight();
 	}
-	if (bScavengeOncePerDay && bScavengedToday)
-	{
-		return FText::FromString(TEXT("이미 수색함"));
-	}
-	return FText::FromString(FString::Printf(TEXT("수색하기  +%d"), ScavengeCoinReward));
 }

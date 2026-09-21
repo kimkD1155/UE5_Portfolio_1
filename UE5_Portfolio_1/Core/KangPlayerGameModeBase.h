@@ -29,37 +29,46 @@ public:
 	// AKangPlayerCharacter::HandleDeath 에서 호출 — 즉시 게임오버
 	void NotifyPlayerDied();
 
-	// ABarricade::OnBarricadeDestroyed 에 바인딩 (Phase C)
+	// UBarricadeManager::OnAllDestroyed 에 바인딩 — 공유 체력 풀이 0이 되면 전멸 판정
 	UFUNCTION()
-	void HandleBarricadeDestroyed(class ABarricade* Barricade);
+	void HandleBarricadesDestroyed();
 
-	// 일시정지 메뉴(HUDComponent)가 호출. 국면 타이머 + 스포너 + 아군 공격 타이머를 전부 멈춘다.
+	// 일시정지 메뉴(HUDComponent)가 호출. 스포너 + 아군 공격 타이머 + 밤→낮 지연 타이머를 전부 멈춘다.
 	// (SetGamePaused 만으로는 FTimerManager 타이머가 안 멈추기 때문에 각 소유자에게 직접 알려야 한다.)
+	// 주의: 실측 결과 UGameplayStatics::SetGamePaused 는 위젯이 자체적으로 돌리는 FTimerManager
+	// 타이머까지 멈춰버린다 — Day 안내판처럼 "화면에 뜬 타이머로 자동으로 끝나야 하는" 위젯과는
+	// 절대 같이 쓰면 안 된다 (안내가 영원히 안 사라짐). 그런 경우엔 SetWaveSpawningPaused 만 쓸 것.
 	void SetGamePaused(bool bPaused);
 
 	UFUNCTION(BlueprintPure, Category = "Phase")
 	bool IsGamePaused() const { return bIsGamePaused; }
 
+	// 스포너만 개별적으로 멈춘다 (SetGamePaused와 별개, 월드 전체를 멈추지 않음) — Day 안내처럼
+	// 안내판 자신의 타이머는 계속 돌아가야 하는 상황에서 웨이브 스폰만 막고 싶을 때 쓴다.
+	void SetWaveSpawningPaused(bool bPaused);
+
+	// 상점 위젯의 "전투 시작" 버튼 등에서 호출 — 낮 동안에만 플레이어가 직접 밤으로 넘어간다.
+	UFUNCTION(BlueprintCallable, Category = "Phase")
+	void RequestStartNight();
+
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Phase")
-	float DayDuration = 60.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Phase")
-	float NightDuration = 90.f;
-
 	// 0 = 무한 모드. >0 이면 그 일수를 넘긴 낮 전환 시점에 게임 클리어.
 	UPROPERTY(EditDefaultsOnly, Category = "Phase")
 	int32 TargetDays = 0;
 
+	// 이번 밤에 스폰할 좀비 총수 = BaseEnemiesPerWave + (일차-1) * EnemiesPerWaveIncrementPerDay
 	UPROPERTY(EditDefaultsOnly, Category = "Phase")
-	bool bStartWithDay = true;
+	int32 BaseEnemiesPerWave = 8;
 
-	// 국면 타이머 갱신 주기
 	UPROPERTY(EditDefaultsOnly, Category = "Phase")
-	float PhaseTickInterval = 0.25f;
+	int32 EnemiesPerWaveIncrementPerDay = 2;
+
+	// 이번 웨이브의 좀비를 전부 잡은 뒤 낮으로 전환되기까지의 대기 시간(초)
+	UPROPERTY(EditDefaultsOnly, Category = "Phase")
+	float NightToDayDelay = 3.f;
 
 	void StartPhase(EGamePhase NewPhase);
-	void TickPhase();
+	int32 ComputeWaveEnemyCount(int32 DayNumber) const;
 	void AdvanceToDay();
 	void TriggerGameOver();
 
@@ -75,14 +84,20 @@ protected:
 	// UEnemyManager::OnEnemyCountChanged (비-다이나믹 멀티캐스트) 바인딩 대상
 	void HandleEnemyCountChanged(int32 NewCount);
 
+	// AKangGameState::OnSpawningActiveChanged 바인딩 — 좀비 전멸과 스폰 창이 닫히는 시점이
+	// 서로 다른 타이머로 독립적으로 발생하므로, 어느 쪽이 나중에 일어나든 놓치지 않게 양쪽에서
+	// 같은 조건(CheckNightComplete)을 다시 확인한다.
+	UFUNCTION()
+	void HandleSpawningActiveChanged(bool bActive);
+
+	// 밤 종료 조건(좀비 전멸 + 스폰 창 닫힘)을 확인하고, 충족되면 낮으로의 지연 전환 타이머를 건다.
+	void CheckNightComplete();
+
 	AKangGameState* GetKangGameState() const;
 	UEnemyManager* GetEnemyManager() const;
 
-	FTimerHandle PhaseTickHandle;
-	float PhaseElapsed = 0.f;
-	float CurrentPhaseDuration = 0.f;
-
-	int32 AliveBarricadeCount = 0;
+	// 마지막 좀비를 잡은 뒤 낮으로 전환하기까지의 지연 타이머
+	FTimerHandle NightToDayDelayHandle;
 
 	bool bIsGamePaused = false;
 

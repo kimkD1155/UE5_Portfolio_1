@@ -31,12 +31,14 @@ public:
 	void StartFire();       // 플레이어: 버튼 누름 (자동/반자동은 무기가 결정)
 	void StopFire();        // 플레이어: 버튼 뗌
 	void FireOnce();        // AI: 자동/반자동 무관하게 1발
-	void StartAim();
-	void StopAim();
 	void Reload();
 
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	bool IsReloading() const { return ReloadingWeapon != nullptr; }
+
+	// 장전 진행률 0~1. 크로스헤어 위젯이 원형 프로그레스바를 이 값에 바인딩해서 그린다.
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	float GetReloadProgress() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -67,4 +69,9 @@ private:
 	TObjectPtr<ARangedWeapon> ReloadingWeapon;
 
 	FTimerHandle ReloadTimerHandle;
+
+	// GetReloadProgress() 가 몽타주/타이머 어느 경로로 장전 중이든 동일하게 0~1 을
+	// 계산할 수 있도록, 장전 시작 시각과 총 소요 시간을 직접 기록해둔다.
+	float ReloadStartTime = 0.f;
+	float ReloadDuration = 0.f;
 };

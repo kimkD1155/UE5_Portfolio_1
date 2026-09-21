@@ -59,8 +59,6 @@ public:
 
     virtual void StartFire() override;
     virtual void StopFire() override;
-    virtual void StartAim() override;
-    virtual void StopAim() override;
 
     // AI 등에서 자동/반자동과 무관하게 정확히 1발만 쏘고 싶을 때
     void FireSingle();

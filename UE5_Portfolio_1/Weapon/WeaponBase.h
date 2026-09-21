@@ -84,6 +84,19 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FName GripSocketName = "Hand_r_socket";
 
+	// 조준(ADS) 시 이 소켓이 AimMount(카메라 앞의 조준 정렬 목표) 위치/회전에 오도록
+	// 무기 자체를 끌어와 맞춘다 (AKangPlayerCharacter::UpdateWeaponPose 참고). 소켓의
+	// "정면(+X)"이 총구 방향이 아니라 반대(사수 쪽)를 향하도록 잘못 잡혀 있으면 무기
+	// 몸체 전체가 반대로 돌아가버리니 소켓 Rotation의 Yaw를 180도 뒤집어야 한다.
+	// 소켓이 없는 무기는 조준해도 힙파이어 위치 그대로 유지된다.
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FName ScopeSocketName = "ScopeSocket";
+
+	// 스켈레톤 에디터에서 ScopeSocket 회전을 직접 고치는 대신, 여기서 빠르게 보정해가며
+	// 테스트할 수 있도록 둔다. 소켓이 반대 방향을 보고 있다면 Yaw=180 부터 시도해볼 것.
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	FRotator ScopeSocketRotationCorrection;
+
 	// ── 자식 클래스에서 override ───────────────────
 	// IInteractableInterface
 	virtual void Interact_Implementation(ACharacter* Interactor);
@@ -98,8 +111,6 @@ public:
 
 	virtual void StartFire() {}
 	virtual void StopFire() {}
-	virtual void StartAim() {}
-	virtual void StopAim() {}
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	USoundBase* FireSound;

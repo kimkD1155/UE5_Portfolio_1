@@ -96,6 +96,7 @@ void ARangedWeapon::FireOnce()
         FVector CamLoc;
         FRotator CamRot;
         OwnerController->GetPlayerViewPoint(CamLoc, CamRot);
+
         const FVector CamEnd = CamLoc + CamRot.Vector() * Range;
 
         FHitResult CamHit;
@@ -143,16 +144,6 @@ void ARangedWeapon::FireOnce()
     }
 }
 
-void ARangedWeapon::StartAim()
-{
-    
-}
-
-void ARangedWeapon::StopAim()
-{
-    
-}
-
 void ARangedWeapon::Reload()
 {
     SetGunState(EGunState::Reloading);
@@ -161,11 +152,9 @@ void ARangedWeapon::Reload()
 
 void ARangedWeapon::ReloadFinished()
 {
-    const int32 Needed = GunData.MagazineSize - CurrentAmmo;
-    const int32 ToAdd = FMath::Min(Needed, ReserveAmmo);
-    CurrentAmmo += ToAdd;
-    ReserveAmmo -= ToAdd;
-    SetGunState(CurrentAmmo > 0 ? EGunState::Idle : EGunState::Empty);
+    // 예비 탄약은 무한 — 소모하지 않고 항상 탄창을 가득 채운다.
+    CurrentAmmo = GunData.MagazineSize;
+    SetGunState(EGunState::Idle);
     BroadcastAmmo();
 }
 

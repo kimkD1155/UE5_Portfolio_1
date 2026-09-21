@@ -40,35 +40,30 @@ void AWeaponBase::Tick(float DeltaTime)
 // ── 장착 ──────────────────────────────────────────────────────────────────────
 void AWeaponBase::Equip(ACharacter* NewOwner)
 {
-	UE_LOG(LogTemp, Log, TEXT("Equipping weapon"));
     OwnerCharacter = NewOwner;
     SetOwner(NewOwner);
 
-    //// 어떤 메시에 붙으려는지 확인
-    //USkeletalMeshComponent* CharMesh = NewOwner->GetMesh();
-    //UE_LOG(LogTemp, Warning, TEXT("Mesh: %s"), *CharMesh->GetName());
-    //UE_LOG(LogTemp, Warning, TEXT("SkeletalMesh Asset: %s"),
-    //    CharMesh->GetSkeletalMeshAsset()
-    //    ? *CharMesh->GetSkeletalMeshAsset()->GetName()
-    //    : TEXT("NULL"));
-
-    //// 소켓 존재 여부 확인
-    //bool bSocketExists = NewOwner->GetMesh()->DoesSocketExist(AttachSocketName);
-    //UE_LOG(LogTemp, Warning, TEXT("Socket [%s] exists: %s"),
-    //    *AttachSocketName.ToString(),
-    //    bSocketExists ? TEXT("YES") : TEXT("NO"));
-
-    AttachToComponent(
-        NewOwner->GetMesh(),
-        FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-        GripSocketName
-    );
+    // 플레이어는 몸통이 안 보이므로 캐릭터 메시 소켓이 아니라 카메라에 붙은
+    // WeaponMount 에 무기를 붙인다 (화면 오른쪽 힙파이어 위치). 아군은 기존처럼
+    // 몸통 그립 소켓에 붙인다.
+    if (AKangPlayerCharacter* PlayerChar = Cast<AKangPlayerCharacter>(NewOwner))
+    {
+        AttachToComponent(
+            PlayerChar->GetWeaponMount(),
+            FAttachmentTransformRules::SnapToTargetNotIncludingScale
+        );
+    }
+    else
+    {
+        AttachToComponent(
+            NewOwner->GetMesh(),
+            FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+            GripSocketName
+        );
+    }
 
     // Attach 후 소켓 기준 보정값 적용
     SetActorRelativeTransform(GripOffset);
-    
-    UE_LOG(LogTemp, Warning, TEXT("GripOffset applied: Loc=%s Rot=%s"),
-        *GripOffset.GetLocation().ToString(), *GripOffset.Rotator().ToString());
 }
 
 void AWeaponBase::Unequip()

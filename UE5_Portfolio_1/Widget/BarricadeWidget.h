@@ -12,15 +12,13 @@
 
 class UProgressBar;
 class UTextBlock;
-class ABarricade;
 
 UCLASS()
 class UE5_PORTFOLIO_1_API UBarricadeWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
 public:
-	void InitWidget(ABarricade* InBarricade);
 	void UpdateHP(float CurrentHP, float MaxHP);
 
 protected:
@@ -29,8 +27,4 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* HPText;
-
-	UPROPERTY()
-	ABarricade* Barricade;
-
 };

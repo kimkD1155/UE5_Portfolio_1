@@ -7,7 +7,8 @@ void UAmmoWidget::UpdateAmmo(int32 CurrentAmmo, int32 ReserveAmmo)
 {
     if (AmmoText)
     {
-        FString Text = FString::Printf(TEXT("%d / %d"), CurrentAmmo, ReserveAmmo);
+        // 예비 탄약은 무한이라(ARangedWeapon::ReloadFinished 참고) 항상 ∞ 로 표시한다.
+        FString Text = FString::Printf(TEXT("%d / %s"), CurrentAmmo, TEXT("∞"));
         AmmoText->SetText(FText::FromString(Text));
     }
 }

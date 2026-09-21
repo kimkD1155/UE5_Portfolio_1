@@ -12,12 +12,13 @@
 #include "../Widget/PhaseWidget.h"
 #include "../Widget/ResultWidget.h"
 #include "../Widget/ShopWidget.h"
+#include "../Widget/DayPhaseAnnounceWidget.h"
 #include "../Core/GamePhase.h"
 #include "HUDComponent.generated.h"
 
-class ABarricade;
 class AWeaponBase;
 class ARangedWeapon;
+class UCombatComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE5_PORTFOLIO_1_API UHUDComponent : public UActorComponent
@@ -51,8 +52,7 @@ public:
 	UFUNCTION()
 	void HandleAmmoChanged(int32 CurrentAmmo, int32 ReserveAmmo);
 
-// 바리케이드 관련
-	void InitBarricadeUI(ABarricade* Barricade);
+// 바리케이드 관련 — UBarricadeManager 의 공유 체력 풀을 구독한다 (개별 바리케이드가 아니라).
 	UFUNCTION()
 	void UpdateBarricadeUI(float CurrentHP, float MaxHP);
 
@@ -64,15 +64,19 @@ public:
 	UFUNCTION()
 	void HandlePhaseChanged(EGamePhase NewPhase);
 
-	UFUNCTION()
-	void HandlePhaseTimeChanged(float Remaining);
-
 	// UEnemyManager::OnEnemyCountChanged (비-다이나믹) 바인딩
 	void HandleEnemyCountChanged(int32 NewCount);
 
-// 커맨드 메뉴(B) 관련 — 구 AShop 상호작용을 대체
-	// 닫혀있으면 열고, 열려있으면 닫는다.
+	// Day 안내판이 떠 있는 동안 웨이브/입력이 진행되지 않도록 일시정지 + 캐릭터 입력을 막는다.
+	// DayPhaseAnnounceWidget::OnQueueFinished (비-다이나믹) 바인딩.
+	void PauseForDayAnnouncement();
+	void HandleDayAnnounceFinished();
+
+// 상점 메뉴 관련 — 구 AShop 상호작용을 대체. 이제 밤/낮 전환에 맞춰 자동으로 열리고 닫힌다.
+	// B 키로 수동 토글도 가능하지만 낮이 아니면 열리지 않는다 (밤에는 구매 불가).
 	void ToggleMenu();
+	// 이미 열려있으면 아무 일도 하지 않는다. 낮/밤 전환 시 HUDComponent 가 직접 호출한다.
+	void OpenMenu();
 	// 이미 닫혀있으면 아무 일도 하지 않는다 (ESC 키 등에서 안전하게 호출 가능).
 	void CloseMenu();
 	bool IsMenuOpen() const;
@@ -118,6 +122,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<UShopWidget> MenuWidgetClass;
 
+	// Day 시작/종료 시 화면을 검게 덮고 크게 띄우는 전체화면 안내.
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	TSubclassOf<UDayPhaseAnnounceWidget> DayPhaseAnnounceWidgetClass;
+
 	// 일시정지 메뉴. 별도 C++ 클래스가 필요 없어서(Resume/Quit 모두 BP 그래프에서
 	// HUDComponent 함수나 엔진 기본 노드를 직접 호출) 순수 UUserWidget 으로 둔다.
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
@@ -136,6 +144,9 @@ private:
 	// 현재 탄약 델리게이트가 바인딩된 무기 (무기 교체 시 갈아탐)
 	UPROPERTY()
 	ARangedWeapon* BoundAmmoWeapon = nullptr;
+	// 장전 진행률(원형 프로그레스바)을 매 프레임 크로스헤어 위젯에 밀어넣기 위해 캐싱.
+	UPROPERTY()
+	UCombatComponent* CombatComp = nullptr;
 	UPROPERTY()
 	UBarricadeWidget* BarricadeWidget = nullptr;
 	UPROPERTY()
@@ -148,4 +159,13 @@ private:
 	UShopWidget* MenuWidget = nullptr;
 	UPROPERTY()
 	UUserWidget* PauseWidget = nullptr;
+	UPROPERTY()
+	UDayPhaseAnnounceWidget* DayPhaseAnnounceWidget = nullptr;
+
+	// 하루의 순서는 "밤 → 낮" 이다: 밤이 시작되며 그 사이클의 Day N 이 열리고, 뒤이은 낮(상점)이
+	// 끝나 다시 밤이 될 때 그 사이클이 닫힌다. Day→Night 전환 감지를 위해 직전 국면을 기억하고,
+	// GS 의 DayNumber 는 낮이 시작되는 시점에 이미 다음 사이클 번호로 올라가 있으므로 "종료" 안내에
+	// 쓸 번호는 사이클이 열릴 때의 값을 따로 캐싱해둔다.
+	EGamePhase LastPhase = EGamePhase::None;
+	int32 CurrentCycleDayNumber = 0;
 };

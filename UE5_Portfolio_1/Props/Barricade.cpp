@@ -1,16 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Barricade.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/PlayerController.h"
-#include "Engine/World.h"
-#include "TimerManager.h"
-#include "../Component/HealthComponent.h"
-#include "../Core/KangPlayerState.h"
-#include "../Core/UpgradeType.h"
+#include "../Manager/BarricadeManager.h"
 #include "../AI/EnemyAIController.h"
 #include "Engine/StaticMesh.h"
 
@@ -29,11 +24,6 @@ ABarricade::ABarricade()
 	BlockingVolume->SetupAttachment(Mesh);
 	BlockingVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	BlockingVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
-	HealthComponent->SetMaxHealth(BaseMaxHealth);
-	// 자동 OnTakeAnyDamage 바인딩을 끄고 HandleTakeAnyDamage 에서 가해자를 걸러 직접 전달한다.
-	HealthComponent->SetBindToOwnerDamage(false);
 }
 
 // Called when the game starts or when spawned
@@ -41,11 +31,13 @@ void ABarricade::BeginPlay()
 {
 	Super::BeginPlay();
 
-	HealthComponent->OnHealthChanged.AddDynamic(this, &ABarricade::HandleHealthChanged);
-	HealthComponent->OnDeath.AddDynamic(this, &ABarricade::HandleDeath);
 	OnTakeAnyDamage.AddDynamic(this, &ABarricade::HandleTakeAnyDamage);
 
-	BindToPlayerState();
+	if (UBarricadeManager* Manager = GetWorld()->GetSubsystem<UBarricadeManager>())
+	{
+		Manager->OnHPChanged.AddDynamic(this, &ABarricade::HandleSharedHPChanged);
+		Manager->RegisterBarricade(this, BaseMaxHealth);
+	}
 }
 
 void ABarricade::OnConstruction(const FTransform& Transform)
@@ -68,50 +60,9 @@ void ABarricade::HandleTakeAnyDamage(AActor* /*DamagedActor*/, float Damage, con
 	// 좀비의 컨트롤러(AEnemyAIController)가 가한 피해만 받는다.
 	if (!Cast<AEnemyAIController>(InstigatedBy)) return;
 
-	HealthComponent->ApplyDamage(Damage, DamageCauser);
-}
-
-void ABarricade::BindToPlayerState()
-{
-	if (BoundPlayerState.IsValid()) return;
-
-	AKangPlayerState* PS = nullptr;
-	if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	if (UBarricadeManager* Manager = GetWorld()->GetSubsystem<UBarricadeManager>())
 	{
-		PS = PC->GetPlayerState<AKangPlayerState>();
-	}
-
-	if (!PS)
-	{
-		// PlayerState 가 아직 없으면 우선 기본 최대 체력으로 맞춰두고 잠시 후 재시도
-		HandleUpgradesChanged();
-		GetWorldTimerManager().SetTimer(BindRetryHandle, this, &ABarricade::BindToPlayerState, 0.25f, false);
-		return;
-	}
-
-	BoundPlayerState = PS;
-	PS->OnUpgradesChanged.AddDynamic(this, &ABarricade::HandleUpgradesChanged);
-	HandleUpgradesChanged(); // 현재 업그레이드 상태로 최대 체력 초기화
-}
-
-void ABarricade::HandleUpgradesChanged()
-{
-	AKangPlayerState* PS = BoundPlayerState.Get();
-	const float Multiplier = PS ? PS->GetUpgradeMultiplier(EUpgradeType::BarricadeHealth) : 1.f;
-
-	const float OldMax = HealthComponent->GetMaxHealth();
-	const float NewMax = BaseMaxHealth * Multiplier;
-
-	// 최대치만 올리고 현재 체력은 유지 → 증가분만큼 회복시켜 준다
-	HealthComponent->SetMaxHealth(NewMax, /*bFillToMax=*/false);
-	if (NewMax > OldMax && !IsDestroyed())
-	{
-		HealthComponent->Heal(NewMax - OldMax);
-	}
-	else
-	{
-		// 최대치가 그대로여도 HP 바가 새 비율을 반영하도록 한 번 브로드캐스트
-		OnHPChanged.Broadcast(HealthComponent->GetHealth(), NewMax);
+		Manager->ApplyDamage(Damage, DamageCauser);
 	}
 }
 
@@ -123,30 +74,34 @@ void ABarricade::Tick(float DeltaTime)
 
 float ABarricade::GetCurrentHealth() const
 {
-	return HealthComponent->GetHealth();
+	const UBarricadeManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UBarricadeManager>() : nullptr;
+	return Manager ? Manager->GetHealth() : 0.f;
 }
 
 float ABarricade::GetMaxHealth() const
 {
-	return HealthComponent->GetMaxHealth();
+	const UBarricadeManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UBarricadeManager>() : nullptr;
+	return Manager ? Manager->GetMaxHealth() : 0.f;
 }
 
 bool ABarricade::IsDestroyed() const
 {
-	return HealthComponent->IsDead();
+	const UBarricadeManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UBarricadeManager>() : nullptr;
+	return Manager && Manager->IsDestroyed();
 }
 
 bool ABarricade::IsFullHealth() const
 {
-	return HealthComponent->IsFullHealth();
+	const UBarricadeManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UBarricadeManager>() : nullptr;
+	return Manager && Manager->IsFullHealth();
 }
 
-void ABarricade::HandleHealthChanged(float Health, float MaxHealth, float /*Delta*/, AActor* /*DamageInstigator*/)
+void ABarricade::HandleSharedHPChanged(float Health, float MaxHealth)
 {
 	OnHPChanged.Broadcast(Health, MaxHealth);
 }
 
-void ABarricade::HandleDeath(AActor* /*DamageInstigator*/)
+void ABarricade::NotifyDestroyedByManager()
 {
 	ApplyDestroyedState();
 	OnBarricadeDestroyed.Broadcast(this);
@@ -162,12 +117,13 @@ void ABarricade::ApplyDestroyedState()
 
 void ABarricade::Interact_Implementation(ACharacter* Interactor)
 {
-	if (IsDestroyed() || IsFullHealth())
+	UBarricadeManager* Manager = GetWorld() ? GetWorld()->GetSubsystem<UBarricadeManager>() : nullptr;
+	if (!Manager || Manager->IsDestroyed() || Manager->IsFullHealth())
 	{
 		return;
 	}
 
-	HealthComponent->Heal(RepairAmountPerInteract);
+	Manager->Repair(RepairAmountPerInteract);
 }
 
 FText ABarricade::GetInteractHintText_Implementation()

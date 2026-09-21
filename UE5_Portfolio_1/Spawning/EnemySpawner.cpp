@@ -84,10 +84,18 @@ void AEnemySpawner::SetSpawningPaused(bool bPaused)
 
 void AEnemySpawner::SpawnEnemy()
 {
+	AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>();
+
 	// 스폰 창이 닫혔으면 재예약하지 않는다 (StopSpawning 의 ClearTimer 와 이중 안전장치)
-	if (AKangGameState* GS = GetWorld()->GetGameState<AKangGameState>())
+	if (GS && !GS->IsSpawningActive()) return;
+
+	// 이번 웨이브의 스폰 수량을 다 채웠으면 스폰 창을 닫는다. 시간이 아니라 마릿수로 웨이브가 끝난다.
+	// (다른 스포너들도 OnSpawningActiveChanged 를 통해 함께 멈춘다.)
+	if (GS && GS->GetEnemiesRemainingToSpawn() <= 0)
 	{
-		if (!GS->IsSpawningActive()) return;
+		UE_LOG(LogTemp, Log, TEXT("[Spawner] %s: wave quota exhausted — closing spawn window"), *GetName());
+		GS->SetSpawningActive(false);
+		return;
 	}
 
 	TSubclassOf<ACharacter> SelectedClass = SelectEnemyClass();
@@ -105,7 +113,25 @@ void AEnemySpawner::SpawnEnemy()
 			{
 				Manager->RegisterEnemy(SpawnedEnemy);
 			}
+
+			// 실제로 좀비가 세상에 등장했을 때만 수량을 차감한다 (스폰 시도가 아니라 성공에 걸어야
+			// 스폰이 가끔 실패해도 웨이브가 목표 마릿수를 다 채우고 끝난다).
+			if (GS)
+			{
+				GS->ConsumeSpawnQuota();
+				UE_LOG(LogTemp, Log, TEXT("[Spawner] %s: spawned %s — %d left to spawn this wave"),
+					*GetName(), *SelectedClass->GetName(), GS->GetEnemiesRemainingToSpawn());
+			}
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Spawner] %s: Pool->Acquire failed for %s — will retry next tick, quota untouched"),
+				*GetName(), *SelectedClass->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Spawner] %s: SelectEnemyClass returned none — is EnemySpawnInfos empty?"), *GetName());
 	}
 
 	const float NextInterval = FMath::FRandRange(CurrentSpawnInterval * 0.5f, CurrentSpawnInterval * 1.5f);

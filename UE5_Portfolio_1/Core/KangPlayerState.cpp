@@ -3,6 +3,7 @@
 
 #include "KangPlayerState.h"
 #include "../Data/UpgradeTable.h"
+#include "../Weapon/WeaponBase.h"
 #include "SaveGameSubsystem.h"
 #include "Engine/GameInstance.h"
 
@@ -18,6 +19,7 @@ void AKangPlayerState::BeginPlay()
 		{
 			Coin = Save->GetSavedCoin();
 			UpgradeLevels = Save->GetSavedUpgradeLevels();
+			UnlockedWeapons = Save->GetSavedUnlockedWeapons();
 		}
 	}
 }
@@ -82,4 +84,17 @@ void AKangPlayerState::AddUpgradeLevel(EUpgradeType Type, int32 Delta)
 	int32& Level = UpgradeLevels.FindOrAdd(Type);
 	Level = FMath::Clamp(Level + Delta, 0, Max);
 	OnUpgradesChanged.Broadcast();
+}
+
+bool AKangPlayerState::IsWeaponUnlocked(TSubclassOf<AWeaponBase> WeaponClass) const
+{
+	return WeaponClass && UnlockedWeapons.Contains(WeaponClass);
+}
+
+void AKangPlayerState::UnlockWeapon(TSubclassOf<AWeaponBase> WeaponClass)
+{
+	if (WeaponClass)
+	{
+		UnlockedWeapons.AddUnique(WeaponClass);
+	}
 }

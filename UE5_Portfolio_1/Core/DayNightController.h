@@ -28,6 +28,11 @@ struct FLightPhaseSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight", meta = (ClampMin = "0.0"))
 	float SkyLightIntensity = 1.f;
+
+	// 하늘에 보이는 태양 원반(SkyAtmosphere의 Sun Disk)을 표시할지. 태양 위치를 낮/밤 내내
+	// 고정해두는 경우, 밤에도 하늘에 해가 떠있는 게 어색해서 밤에는 꺼두는 용도.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DayNight")
+	bool bShowSunDisc = true;
 };
 
 /**
@@ -44,8 +49,6 @@ class UE5_PORTFOLIO_1_API ADayNightController : public AActor
 public:
 	ADayNightController();
 
-	virtual void Tick(float DeltaTime) override;
-
 protected:
 	virtual void BeginPlay() override;
 
@@ -58,6 +61,17 @@ protected:
 
 	void StartTransitionTo(const FLightPhaseSettings& Target);
 	void ApplySettings(const FLightPhaseSettings& S, bool bRecaptureSky);
+
+	// BeginPlay 시점에 AKangGameState 가 아직 준비되지 않았을 수 있어(액터 초기화 순서 문제),
+	// 성공할 때까지 하트비트 타이머에서 계속 재시도한다. 한 번 성공하면 더 이상 호출되지 않는다.
+	void TryBindGameState();
+
+	// Actor Tick 대신 타이머로 보간을 돌린다 — 배치된 인스턴스가 (BP 클래스 디폴트 등에서)
+	// Tick 자체가 꺼져있어도 항상 동작하도록 보장하기 위해서다. 실제로 이 프로젝트에서
+	// Tick 이 꺼져 있어서 전환이 통째로 멈춰있던 버그를 겪었다.
+	void Heartbeat();
+	FTimerHandle HeartbeatTimerHandle;
+	static constexpr float HeartbeatInterval = 0.05f;
 
 	static FLightPhaseSettings BlendSettings(const FLightPhaseSettings& A, const FLightPhaseSettings& B, float Alpha);
 
@@ -83,4 +97,5 @@ private:
 	FLightPhaseSettings ToSettings;
 	float TransitionElapsed = 0.f;
 	bool bTransitioning = false;
+	bool bBoundToGameState = false;
 };

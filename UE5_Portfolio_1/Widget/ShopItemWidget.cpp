@@ -16,7 +16,7 @@ void UShopItemWidget::NativeConstruct()
 }
 
 void UShopItemWidget::InitItem(const FShopItemData& InItemData, int32 InItemIndex,
-	int32 DisplayPrice, int32 CurrentLevel, bool bMaxed)
+	int32 DisplayPrice, int32 CurrentLevel, bool bMaxed, bool bAlreadyOwned)
 {
 	ItemData = InItemData;
 	ItemIndex = InItemIndex;
@@ -26,16 +26,17 @@ void UShopItemWidget::InitItem(const FShopItemData& InItemData, int32 InItemInde
 
 	if (PriceText)
 	{
-		const FString PriceStr = bMaxed
-			? FString(TEXT("MAX"))
-			: FString::Printf(TEXT("$ %d"), DisplayPrice);
+		FString PriceStr;
+		if (bMaxed) PriceStr = TEXT("MAX");
+		else if (bAlreadyOwned) PriceStr = TEXT("무료");
+		else PriceStr = FString::Printf(TEXT("$ %d"), DisplayPrice);
 		PriceText->SetText(FText::FromString(PriceStr));
 	}
 
 	if (BuyButton)
 		BuyButton->SetIsEnabled(!bMaxed);
 
-	OnItemInitialized(DisplayPrice, CurrentLevel, bMaxed);
+	OnItemInitialized(DisplayPrice, CurrentLevel, bMaxed, bAlreadyOwned);
 }
 
 void UShopItemWidget::OnBuyButtonClicked()

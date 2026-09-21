@@ -8,6 +8,7 @@
 #include "SaveGameSubsystem.generated.h"
 
 class UKangSaveGame;
+class AWeaponBase;
 
 /**
  * 코인/업그레이드/일차 진행도를 디스크에 영속시키는 창구. 전부 수동 저장/불러오기다
@@ -26,7 +27,8 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	// Pause 메뉴의 Save 버튼에서 HUDComponent::SaveGame() 이 호출.
-	void SaveRun(int32 InCoin, const TMap<EUpgradeType, int32>& InUpgradeLevels, int32 InDayNumber);
+	void SaveRun(int32 InCoin, const TMap<EUpgradeType, int32>& InUpgradeLevels, int32 InDayNumber,
+		const TArray<TSubclassOf<AWeaponBase>>& InUnlockedWeapons);
 
 	// GameMode 가 게임오버 시점에 호출. 최고 기록은 계속 자동 갱신(하이스코어 성격이라 수동 저장과 별개).
 	void SaveBestDay(int32 DayReached);
@@ -47,6 +49,7 @@ public:
 	int32 GetSavedCoin() const;
 	TMap<EUpgradeType, int32> GetSavedUpgradeLevels() const;
 	int32 GetSavedDayNumber() const;
+	TArray<TSubclassOf<AWeaponBase>> GetSavedUnlockedWeapons() const;
 
 	// 메인 메뉴 위젯에서 "최고 기록: Day N" 표시용.
 	UFUNCTION(BlueprintPure, Category = "Save")
